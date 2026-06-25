@@ -9,10 +9,12 @@ grader confirms or overrides the final grade.
 ## Skill level of the maintainer
 
 I am learning Python. I know variables, loops, and
-functions. I do not know decorators, generators,
-async/await, or advanced typing. Prefer simple,
-explicit code over clever abstractions. Add comments
-where logic is non-obvious.
+functions. I use simple decorators from the standard
+library like `@dataclass` and `@property`, but I do
+not write my own decorators, and I do not know
+metaclasses, descriptors, or async/await. Prefer
+simple, explicit code over clever abstractions. Add
+comments where logic is non-obvious.
 
 ## Project conventions
 
