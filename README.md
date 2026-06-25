@@ -3,16 +3,17 @@
 An AI-assisted grading system for Jupyter notebook
 submissions in a Python intro course at FH Münster.
 Combines deterministic code analysis (pytest, ruff)
-with LLM-based qualitative feedback. The human
-grader confirms or overrides the final grade.
+with LLM-based qualitative feedback. Students recieve instant feedback via LTI inside Ilias
 
 ## Skill level of the maintainer
 
 I am learning Python. I know variables, loops, and
-functions. I do not know decorators, generators,
-async/await, or advanced typing. Prefer simple,
-explicit code over clever abstractions. Add comments
-where logic is non-obvious.
+functions. I use simple decorators from the standard
+library like `@dataclass` and `@property`, but I do
+not write my own decorators, and I do not know
+metaclasses, descriptors, or async/await. Prefer
+simple, explicit code over clever abstractions. Add
+comments where logic is non-obvious.
 
 ## Project conventions
 
@@ -38,10 +39,10 @@ where logic is non-obvious.
 ## ILIAS / LTI integration (planned)
 
 The goal is to embed this grader into ILIAS via LTI so that a student
-gets **immediate feedback right after submitting** their notebook, and a
-grade can later flow back into the ILIAS gradebook.
+gets **immediate feedback right after submitting** their notebook, and the
+grade can flow back into the ILIAS gradebook.
 
-**What LTI is:** a connector standard (like a USB port) that lets ILIAS
+**What LTI is:** a connector standard that lets ILIAS
 launch an external tool with single sign-on and receive a score back.
 ILIAS is the consumer/platform; this grader is the external tool. The
 tool runs on its own server, not inside ILIAS.
@@ -52,8 +53,7 @@ tool runs on its own server, not inside ILIAS.
   university — important for data protection).
 - **Feedback:** immediate. The automatic, formative feedback (test
   results, ruff, LLM hints) is shown to the student right after upload.
-  The final grade is still confirmed by a human before it is passed back
-  to ILIAS.
+  The final grade is then passed back to ILIAS.
 
 **Student flow:**
 
@@ -61,8 +61,7 @@ tool runs on its own server, not inside ILIAS.
    the tool (passes name, course, role).
 2. Student uploads their `.ipynb` in the tool.
 3. The pipeline runs and shows feedback immediately in the browser.
-4. After human confirmation, the score is sent back to the ILIAS
-   gradebook via the LTI outcomes service.
+4. The score is sent back to the ILIAS gradebook via the LTI outcomes service.
 
 **What is still needed to get there:**
 
