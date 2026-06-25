@@ -3,7 +3,7 @@
 An AI-assisted grading system for Jupyter notebook
 submissions in a Python intro course at FH Münster.
 Combines deterministic code analysis (pytest, ruff)
-with LLM-based qualitative feedback. Students recieve instant feedback via LTI inside Ilias
+with LLM-based qualitative feedback. Students receive instant feedback via LTI inside Ilias
 
 ## Skill level of the maintainer
 
