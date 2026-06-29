@@ -3,7 +3,7 @@
 An AI-assisted grading system for Jupyter notebook
 submissions in a Python intro course at FH Münster.
 Combines deterministic code analysis (pytest, ruff)
-with LLM-based qualitative feedback. Students recieve instant feedback via LTI inside Ilias
+with LLM-based qualitative feedback. Students receive instant feedback via LTI inside Ilias
 
 ## Skill level of the maintainer
 
@@ -23,14 +23,49 @@ comments where logic is non-obvious.
 - Prefer the standard library when possible.
 - No new dependency without a written reason in DECISIONS.md.
 
+## Grading toolchain
+
+Each submission is graded in independent layers, so a problem in one
+layer does not hide the others. Every tool is deterministic except the
+LLM step, and each does exactly one job:
+
+- **Notebook handling & point allocation** — handled in-repo by
+  `notebook_reader.py` (parsing) and `grading_scheme.py` (a small rubric
+  mapping each task to its maximum points). We deliberately do **not**
+  use `nbgrader` for this: it is a large framework with its own database,
+  cell-metadata schema and JupyterHub workflow. That is far above the
+  maintainer's skill level and conflicts with "standard library first".
+  The two things we want from it — reading notebooks and assigning
+  points — are a few dozen lines each and already partly built.
+  (See DECISIONS.md.)
+- **Correctness** — `pytest` runs reference tests against the student's
+  functions. `Hypothesis` (property-based testing) is a possible later
+  addition for tasks where random inputs can be checked against a
+  reference solution; it is **not adopted yet** and would need its own
+  DECISIONS.md entry and a concrete use case first.
+- **Structural requirements** — a small in-repo script using the
+  standard-library `ast` module checks that a solution has the required
+  shape (e.g. uses a loop, defines a named function, uses the modulo
+  operator). Prefer simple `ast.walk()` + `isinstance` checks over the
+  visitor machinery.
+- **Style** — `ruff` (fast, single binary) checks both the student code
+  and this project's own code.
+- **Sandboxing** — student code is untrusted, so every step that
+  *executes* it (`code_runner`, the pytest/Hypothesis runs) happens
+  inside a Docker container with no network and CPU/memory/time limits.
+  The grader's own unit tests run normally on the host. The same sandbox
+  is what makes the web-facing tool safe (see the LTI section below).
+
 ## Module layout
 
-- `grader/notebook_reader.py` — parses .ipynb files into cells
-- `grader/code_runner.py`     — runs code cells, collects test results
-- `grader/code_analyzer.py`   — static analysis (ruff)
-- `grader/ai_grader.py`       — calls the LLM for qualitative feedback
-- `grader/report_builder.py`  — assembles the final per-student report
-- `grader/main.py`            — orchestrates the pipeline
+- `grader/notebook_reader.py`   — parses .ipynb files into cells/tasks
+- `grader/grading_scheme.py`    — point allocation (rubric: task → max points)
+- `grader/code_runner.py`       — runs student code in the Docker sandbox, collects pytest/Hypothesis results
+- `grader/structure_checker.py` — structural requirements via the `ast` module
+- `grader/code_analyzer.py`     — style checks (ruff)
+- `grader/ai_grader.py`         — calls the LLM for qualitative feedback
+- `grader/report_builder.py`    — assembles the final per-student report
+- `grader/main.py`              — orchestrates the pipeline
 
 ## Running tests
 
