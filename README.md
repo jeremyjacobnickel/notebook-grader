@@ -1,19 +1,112 @@
-# Notebook Grader
+# Lab Submission Tool (VS Code Extension)
 
-An AI-assisted grading system for Jupyter notebook
-submissions in a Python intro course at FH Münster.
-Combines deterministic code analysis (pytest, ruff)
-with LLM-based qualitative feedback. Students receive instant feedback via LTI inside Ilias
+A VS Code extension plus a minimal FastAPI backend for Python lab
+("Praktikum") submissions in the *Grundlagen der Programmierung* module
+at a University of Applied Sciences (FH). It replaces the previous manual
+upload to ILIAS (via Leukipp): students load a task into their workspace,
+solve it locally in VS Code, run the tests with one button to see their
+score inline (green/red), optionally ask the AI tutor for a hint, and
+submit the result to an FH backend.
+
+> The repository is still named `notebook-grader` for historical reasons.
+> The project is now an editor-based lab tool, not a server-side notebook
+> grader. See `DECISIONS.md` for the pivot.
 
 ## Skill level of the maintainer
 
-I am learning Python. I know variables, loops, and
-functions. I use simple decorators from the standard
-library like `@dataclass` and `@property`, but I do
-not write my own decorators, and I do not know
-metaclasses, descriptors, or async/await. Prefer
-simple, explicit code over clever abstractions. Add
-comments where logic is non-obvious.
+I am learning Python. I know variables, loops, and functions. I use
+simple decorators from the standard library like `@dataclass` and
+`@property`, but I do not write my own decorators, and I do not know
+metaclasses, descriptors, or async/await. Prefer simple, explicit code
+over clever abstractions. Add comments where logic is non-obvious.
+
+The extension is written in TypeScript, which is new to me. Keep it
+small and conventional — follow the official VS Code extension examples
+rather than clever patterns.
+
+## Grading model
+
+Pass / fail only. **Passed = at least 80 % of the total points.** There
+is no exam and no grade pressure — the focus is on learning, not on
+cheating prevention. The local test result is what counts.
+
+## Student workflow
+
+1. Load a Praktikum into the workspace via the extension.
+2. Solve the task locally in VS Code (`.py` files).
+3. Press **Run tests** → the score is shown inline, green/red.
+4. Optionally press **Hint** → a Socratic AI tip (guiding questions, not
+   a finished solution).
+5. Press **Submit** → the result is sent to the FH backend.
+
+## Components
+
+Three parts:
+
+### Extension (client) — `extension/`
+
+TypeScript, VS Code API. Three commands — load Praktikum, run tests,
+submit. A sidebar panel shows the current score and a hint button. The
+extension runs `pytest` locally on the student's machine and talks to the
+backend with the course token.
+
+### Tests (correctness)
+
+`pytest` is the engine. **Hypothesis** (property-based testing) generates
+random inputs on every run, so "passing" means the code actually works
+and cannot be hard-coded against fixed test values. This didactically
+replaces the deliberately-omitted hidden tests. Optional `ast` checks
+cover structural requirements (e.g. a loop instead of a built-in
+function). Everything runs locally on the student's machine.
+
+### Backend — `backend/`
+
+FastAPI, minimal. Two endpoints:
+
+- `POST /submit` — logs the pass/fail result per student (CSV/SQLite to
+  start).
+- `POST /hint` — proxy to the existing FH AI API, with a token check,
+  rate limiting, and a system prompt that pins the AI to Socratic help
+  (guiding questions and concepts, never finished solutions). The
+  Socratic framing is enforced server-side, not trusted to the client.
+
+## Task format
+
+Prefer `.py` files (better testable with `pytest` / VS Code) over
+`.ipynb` notebooks. Use notebooks only when a task requires
+visualisation; then test them with `nbval` / `papermill`.
+
+Target per-task layout:
+
+```
+tasks/<praktikum>/
+  README.md       — Aufgabenstellung (task description)
+  <name>.py       — starter / solution file the student edits
+  test_<name>.py  — pytest + Hypothesis tests (random inputs per run)
+  structure.py    — optional ast checks (e.g. loop instead of a builtin)
+```
+
+## AI tutor role
+
+A tutor that helps while programming — targeted hints based on the code,
+the task description, and the traceback, but never complete solutions.
+The Socratic behaviour is enforced in the `/hint` system prompt on the
+server, not in the client.
+
+## Authentication
+
+A simple token, issued at course enrolment, is sent with every backend
+request and checked server-side. No SSO/OAuth. The token lives in `.env`
+(see `.env.example`) and is never committed.
+
+## Deliberately out of scope
+
+- **No server-side re-execution / hidden tests** — the local test result
+  counts (acceptable for lab submissions).
+- **No SSO/OAuth** — a simple enrolment token is enough.
+- **No plagiarism check** (maybe later).
+- **No server-side Docker sandbox** — code runs locally on the student's
+  own machine, so there is no untrusted code on our servers.
 
 ## Project conventions
 
@@ -21,104 +114,25 @@ comments where logic is non-obvious.
 - One module = one clear responsibility.
 - Functions short enough to fit on one screen.
 - Prefer the standard library when possible.
-- No new dependency without a written reason in DECISIONS.md.
+- No new dependency without a written reason in `DECISIONS.md`.
 
-## Grading toolchain
+## Repository layout
 
-Each submission is graded in independent layers, so a problem in one
-layer does not hide the others. Every tool is deterministic except the
-LLM step, and each does exactly one job:
+- `extension/` — VS Code extension (TypeScript) — *skeleton, planned*
+- `backend/`   — FastAPI service (`/submit`, `/hint`) — *skeleton, planned*
+- `tasks/`     — Praktikum definitions (`.py` + pytest/Hypothesis) — *skeleton, planned*
 
-- **Notebook handling & point allocation** — handled in-repo by
-  `notebook_reader.py` (parsing) and `grading_scheme.py` (a small rubric
-  mapping each task to its maximum points). We deliberately do **not**
-  use `nbgrader` for this: it is a large framework with its own database,
-  cell-metadata schema and JupyterHub workflow. That is far above the
-  maintainer's skill level and conflicts with "standard library first".
-  The two things we want from it — reading notebooks and assigning
-  points — are a few dozen lines each and already partly built.
-  (See DECISIONS.md.)
-- **Correctness** — `pytest` runs reference tests against the student's
-  functions. `Hypothesis` (property-based testing) is a possible later
-  addition for tasks where random inputs can be checked against a
-  reference solution; it is **not adopted yet** and would need its own
-  DECISIONS.md entry and a concrete use case first.
-- **Structural requirements** — a small in-repo script using the
-  standard-library `ast` module checks that a solution has the required
-  shape (e.g. uses a loop, defines a named function, uses the modulo
-  operator). Prefer simple `ast.walk()` + `isinstance` checks over the
-  visitor machinery.
-- **Style** — `ruff` (fast, single binary) checks both the student code
-  and this project's own code.
-- **Sandboxing** — student code is untrusted, so every step that
-  *executes* it (`code_runner`, the pytest/Hypothesis runs) happens
-  inside a Docker container with no network and CPU/memory/time limits.
-  The grader's own unit tests run normally on the host. The same sandbox
-  is what makes the web-facing tool safe (see the LTI section below).
-
-## Module layout
-
-- `grader/notebook_reader.py`   — parses .ipynb files into cells/tasks
-- `grader/grading_scheme.py`    — point allocation (rubric: task → max points)
-- `grader/code_runner.py`       — runs student code in the Docker sandbox, collects pytest/Hypothesis results
-- `grader/structure_checker.py` — structural requirements via the `ast` module
-- `grader/code_analyzer.py`     — style checks (ruff)
-- `grader/ai_grader.py`         — calls the LLM for qualitative feedback
-- `grader/report_builder.py`    — assembles the final per-student report
-- `grader/main.py`              — orchestrates the pipeline
+The previous server-side grading package (`grader/`) and its tests were
+removed in the pivot; see `DECISIONS.md`.
 
 ## Running tests
 
-`pytest tests/` (add this once tests exist)
-
-## ILIAS / LTI integration (planned)
-
-The goal is to embed this grader into ILIAS via LTI so that a student
-gets **immediate feedback right after submitting** their notebook, and the
-grade can flow back into the ILIAS gradebook.
-
-**What LTI is:** a connector standard that lets ILIAS
-launch an external tool with single sign-on and receive a score back.
-ILIAS is the consumer/platform; this grader is the external tool. The
-tool runs on its own server, not inside ILIAS.
-
-**Decisions already made:**
-
-- **Hosting:** on FH Münster servers (so student data does not leave the
-  university — important for data protection).
-- **Feedback:** immediate. The automatic, formative feedback (test
-  results, ruff, LLM hints) is shown to the student right after upload.
-  The final grade is then passed back to ILIAS.
-
-**Student flow:**
-
-1. Student opens the LTI activity in the ILIAS course → ILIAS launches
-   the tool (passes name, course, role).
-2. Student uploads their `.ipynb` in the tool.
-3. The pipeline runs and shows feedback immediately in the browser.
-4. The score is sent back to the ILIAS gradebook via the LTI outcomes service.
-
-**What is still needed to get there:**
-
-- Build the grading pipeline itself (the `grader/` modules do not exist yet).
-- Add a small web layer (Flask) with three pages: LTI launch, upload, feedback.
-- Add an LTI library (`PyLTI1p3` for LTI 1.3, or `PyLTI` for LTI 1.1) —
-  decide the version with the FH ILIAS admin.
-- Have the ILIAS admin register the tool as an LTI consumer (exchange of
-  key/secret or client_id, deployment id, login/JWKS URLs).
-- Set up the FH server with a fixed HTTPS address (LTI requires TLS).
-- **Sandbox student code execution** — `code_runner` runs untrusted code,
-  so it must run in an isolated container with time/memory limits and no
-  network. Critical for a web-facing tool.
-- Clarify data protection (DSGVO): student notebooks are personal data;
-  sending code to an external LLM needs a legal basis / processing
-  agreement (AVV), or the LLM stays inside the FH infrastructure.
-
-This is a future direction. Finish the local CLI pipeline first, then add
-the web layer, then LTI — ideally together with the FH ILIAS admin.
+`pytest` (it discovers the task tests under `tasks/`). Hypothesis is used
+inside those task tests.
 
 ## Important
 
-- Never commit the `.env` file. Use `.env.example` as the template.
-- Real student notebooks contain personal data — they live outside
-  the repo. Only `examples/sample_submission.ipynb` is committed.
+- Never commit the `.env` file — it holds the backend/AI tokens. Use
+  `.env.example` as the template.
+- Real student submissions contain personal data — they live outside the
+  repo. Only example/starter tasks under `tasks/` are committed.

@@ -22,7 +22,9 @@ acting.
   reason for the choice.
 - **Match the maintainer's skill level.** `@dataclass` and `@property`
   are fine. Custom decorators, metaclasses, descriptors, generator
-  protocols, and async are not.
+  protocols, and async are not. This applies to the Python code
+  (`backend/`, `tasks/`). The TypeScript extension (`extension/`) follows
+  the official VS Code extension samples — kept small and conventional.
 - **No dead code, no speculative abstractions.** Build what the current
   task needs.
 
@@ -31,10 +33,12 @@ acting.
 - Work on a feature branch, never directly on `main`.
 - Commit `frame-only` changes (docs, configs, fixtures) separately from
   code changes when both fit in one PR.
-- Run `pytest tests/` before opening a PR.
+- Run `pytest` before opening a PR (it discovers the task tests under
+  `tasks/`).
 
 ## Files that must never be committed
 
-- `.env` (use `.env.example` as the template)
-- Real student notebooks — they contain personal data and live outside
-  the repo. Only `examples/sample_submission.ipynb` is committed.
+- `.env` (use `.env.example` as the template) — it holds the course and
+  FH AI API tokens.
+- Real student submissions — they contain personal data and live outside
+  the repo. Only example/starter tasks under `tasks/` are committed.

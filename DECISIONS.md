@@ -5,6 +5,97 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
+## 2026-06-29 — Architektur-Pivot: VS-Code-Extension + FastAPI-Backend
+
+**Kontext:** Das Projekt wird von einem serverseitigen Notebook-Grader
+(CLI/LTI in ILIAS, Docker-Sandbox) auf eine VS-Code-Extension umgestellt,
+die das manuelle Hochladen auf ILIAS (über Leukipp) ersetzt. Fokus: Lernen
+in einem Programmier-Praktikum, nicht Betrugsabwehr.
+
+**Entscheidung — drei Komponenten:**
+- **Extension (Client):** TypeScript, VS Code API. Drei Commands
+  (Praktikum laden, Tests ausführen, Abgeben) plus Sidebar mit Punktestand
+  und Tipp-Button.
+- **Tests laufen lokal** beim Studierenden. `pytest` als Engine.
+- **Backend:** FastAPI, minimal. Zwei Endpoints `/submit` und `/hint`.
+
+**Neue Abhängigkeiten und ihre Begründung:**
+- **TypeScript / VS Code API** — vorgegeben durch das Ziel "Extension".
+  Klein und konventionell halten (offizielle VS-Code-Beispiele).
+- **FastAPI** — minimaler, gut dokumentierter HTTP-Layer für zwei
+  Endpoints. Alternative `Flask` wäre auch möglich; FastAPI gewählt wegen
+  Typ-Hints, automatischer Validierung und knapper Syntax.
+
+**Vereinfachter Scope (bewusst weggelassen):**
+- Keine serverseitige Neuausführung / Hidden Tests — das lokale
+  Testergebnis zählt (vertretbar bei Labor-Abgaben).
+- Kein SSO/OAuth — ein einfaches Kurs-Token (bei Anmeldung ausgegeben,
+  serverseitig geprüft) reicht.
+- Keine Plagiatsprüfung (eventuell später).
+
+**Folge:** Der frühere Docker-Sandbox-Eintrag (2026-06-29) ist hinfällig —
+es läuft kein nicht vertrauenswürdiger Code mehr auf unseren Servern, die
+Ausführung passiert lokal. Die LTI/ILIAS-Integration entfällt; ILIAS wird
+ersetzt, nicht eingebunden.
+
+---
+
+## 2026-06-29 — Bewertung: Bestanden/Nicht-bestanden ab 80 %
+
+**Kontext:** Wie wird bewertet?
+
+**Entscheidung:** Reine Bestanden/Nicht-bestanden-Wertung. Bestanden =
+mindestens 80 % der Gesamtpunkte.
+
+**Begründung:** Keine Klausur, kein Notendruck. Eine einfache Schwelle
+genügt und hält Implementierung und Feedback unkompliziert.
+
+---
+
+## 2026-06-29 — `Hypothesis` jetzt zentral (statt zurückgestellt)
+
+**Kontext:** Hebt den Eintrag "Hypothesis vorerst zurückgestellt" auf.
+
+**Entscheidung:** `Hypothesis` (Property-based Testing) wird fester
+Bestandteil der Aufgaben-Tests.
+
+**Begründung:** Im neuen Scope gibt es keine serverseitigen Hidden Tests.
+Hypothesis erzeugt pro Lauf zufällige Eingaben — "Bestehen" bedeutet damit
+echtes Funktionieren und lässt sich nicht auf feste Testwerte hardcoden.
+Das ersetzt die Hidden Tests didaktisch. Die Strategien schreibt die
+Lehrperson pro Aufgabe; das liegt im überschaubaren Rahmen, weil pro
+Aufgabe nur wenige Properties nötig sind.
+
+---
+
+## 2026-06-29 — `.py` statt `.ipynb` als Aufgabenformat
+
+**Kontext:** Hebt den Eintrag "`json` statt `nbformat`" praktisch auf —
+`notebook_reader.py` und seine Tests wurden entfernt.
+
+**Entscheidung:** Aufgaben sind `.py`-Dateien. Notebooks nur, wenn eine
+Aufgabe Visualisierung verlangt; dann mit `nbval` / `papermill` getestet.
+
+**Begründung:** `.py` ist mit `pytest` und der VS-Code-Test-UI direkt
+testbar, ohne Zwischenschicht zum Parsen von Zellen. Der frühere
+`notebook_reader` (Aufgaben-Header-Parsing im Notebook) entfällt.
+
+---
+
+## 2026-06-29 — `ruff` aus dem Bewertungs-Scope entfernt
+
+**Kontext:** Der ursprüngliche Plan nutzte `ruff` zur Stilbewertung von
+Studierenden-Code. Der überarbeitete Plan bewertet nur Bestanden/Nicht-
+bestanden auf Basis der Korrektheit (plus optionale `ast`-Struktur-Checks).
+
+**Entscheidung:** Keine Stil-Bewertung der Abgaben. `ruff` darf weiterhin
+fürs eigene Projekt-Linting genutzt werden, ist aber kein Teil der Note.
+
+**Begründung:** Pass/Fail-Fokus aufs Funktionieren. Stilpunkte würden die
+einfache 80-%-Schwelle verkomplizieren, ohne dem Lernziel zu dienen.
+
+---
+
 ## 2026-06-29 — `nbgrader` als Gerüst verworfen
 
 **Kontext:** Überlegung, `nbgrader` als Grundgerüst für Punktevergabe
