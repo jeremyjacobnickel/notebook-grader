@@ -1,7 +1,8 @@
 # Instructions for AI Assistants
 
 This file is read by Claude Code and similar AI assistants before
-they touch the codebase.
+they touch the codebase. The chat history is NOT saved — only the files
+in this repo are, so keep this file up to date when the plan changes.
 
 ## First, read the README
 
@@ -28,6 +29,14 @@ acting.
 - **No dead code, no speculative abstractions.** Build what the current
   task needs.
 
+## Working with the maintainer
+
+- The maintainer is **learning Python** (see the README for the exact
+  level). Prefer **simple, explicit code** over clever abstractions and
+  add comments where logic is non-obvious.
+- The maintainer prefers **explanations in German** (chat). Code,
+  identifiers, and tests stay in English; comments/docstrings may be German.
+
 ## Workflow
 
 - Work on a feature branch, never directly on `main`.
@@ -42,3 +51,24 @@ acting.
   FH AI API tokens.
 - Real student submissions — they contain personal data and live outside
   the repo. Only example/starter tasks under `tasks/` are committed.
+
+## Current plan (June 2026): VS Code extension + FastAPI backend
+
+The project is a **VS Code extension** for Python lab ("Praktikum")
+submissions, with a minimal FastAPI backend. Students load a task, solve
+it locally, run `pytest` + Hypothesis with one button (inline green/red
+score), optionally ask the AI tutor for a Socratic hint, and submit the
+pass/fail result. Code runs **locally** on the student's machine, so there
+is no server-side sandbox. See the README for the full architecture,
+workflow, and out-of-scope items.
+
+Repository areas (currently skeletons): `extension/`, `backend/`, `tasks/`.
+
+## Earlier direction (preserved, not current)
+
+The project was previously planned as a **server-side grading pipeline
+launched by ILIAS over LTI** (the 3-stage local → web server → LTI plan).
+That idea is **not deleted** — it is kept as a documented fallback in
+`docs/alternatives/ilias-lti-webserver.md`, with a full code snapshot on
+the branch `archive/ilias-lti-webserver`. Do not treat it as the active
+plan; consult it only if the editor-based approach is abandoned.

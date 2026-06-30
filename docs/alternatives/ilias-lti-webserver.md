@@ -68,6 +68,23 @@ feedback.
   sending code to an external LLM needs a legal basis / processing
   agreement (AVV), or the LLM stays inside the FH infrastructure.
 
+## Staged build plan (how it was meant to be built)
+
+Each stage builds on the last:
+
+1. **Run locally first.** Finish the core CLI pipeline so it works on a
+   laptop, no internet: notebook in → pytest/ruff/LLM → feedback out.
+   The biggest piece.
+2. **Set up a web server at the FH.** Wrap the program in a small Flask
+   web app (LTI launch, upload, feedback pages) on an FH Münster server
+   under a fixed HTTPS address. Add sandboxing here.
+3. **Connect to ILIAS via LTI.** The ILIAS admin registers the server as
+   an LTI tool; exchange keys once. The student then clicks in ILIAS,
+   lands logged-in in the tool, and the grade is passed back.
+
+Stages 2 and 3 cannot be done alone — they need the FH IT / ILIAS admin.
+Talk to them early (DSGVO, and whether ILIAS supports LTI 1.1 or 1.3).
+
 ## Why this direction was paused
 
 The VS Code extension (the current plan) avoids the hardest parts of this
