@@ -5,31 +5,29 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
-## 2026-06-30 — Aufgaben bleiben `.ipynb` (hebt "`.py` statt `.ipynb`" auf)
+## 2026-06-30 — Aufgaben-Container wird `.py`; Inhalt bleibt identisch
 
-**Kontext:** Prüfung der echten Praktika (1–3, Modul *Grundlagen der
-Programmierung*). Vorgabe des Maintainers: die bestehenden Aufgaben sollen
-**möglichst unverändert** bleiben.
+**Kontext:** Klärung mit dem Maintainer nach Prüfung der echten Praktika
+(1–3, Modul *Grundlagen der Programmierung*). "Aufgaben möglichst gleich
+lassen" bedeutet: der *Inhalt* bleibt identisch (gleiche Aufgaben, gleiche
+Variablennamen, Stil "Ergebnis in Variable speichern"), aber der
+*Container* darf von `.ipynb` nach `.py` wechseln. (Korrigiert eine
+zwischenzeitliche Lesart "Aufgaben bleiben `.ipynb`".)
 
-**Entscheidung:** Aufgaben bleiben Jupyter-Notebooks (`.ipynb`). Kein
-Umschreiben nach `.py`. Die frühere Entscheidung "`.py` statt `.ipynb`"
-ist damit aufgehoben.
+**Entscheidung:** Aufgaben sind `.py`-Dateien. Inhalt unverändert.
 
-**Begründung:**
-- Die Aufgaben *sind* Notebooks; eine Umstellung wäre genau die Änderung,
-  die vermieden werden soll.
-- Die Aufgabenstellung wird im Browser (Leukipp/ILIAS) gelesen, der
-  Code im `.ipynb` in VS Code bearbeitet — VS Code rendert Zellen und
-  Inline-Plots nativ.
-- Die Bewertung braucht **keinen** Live-Kernel: der Grader liest die
-  Code-Zellen, führt sie in einem frischen Namespace aus (Backend `Agg`,
-  IPython-Magics wie `%matplotlib widget` vorher strippen) und prüft die
-  erwarteten Variablen mit `np.allclose`. Das ist leichtgewichtig und im
-  Kern das, was das frühere `grader/notebook_reader.py` tat (auf der
-  Branch `archive/ilias-lti-webserver` als Ausgangspunkt vorhanden).
+**Offen (später entscheiden):** Ob Aufgabenstellung und Bilder *inline* in
+der `.py` stehen (z. B. als Kommentare / `# %%`-Zellen) oder in einem
+*separaten Programm* (Browser / Leukipp / ILIAS) abgerufen werden. Beides
+wird noch nicht gebaut.
 
-**Folge:** Aufgaben-Stil ist "Ergebnis in Variable speichern", nicht
-"Funktion schreiben". `ast`-Checks decken strukturelle Vorgaben ab
+**Begründung:** `.py` ist für die Bewertung einfacher — Datei in frischem
+Namespace ausführen (matplotlib-Backend `Agg`) und erwartete Variablen mit
+`np.allclose` prüfen; `pytest` liefert das Inline-Grün/Rot in VS Code
+nativ. Da der Aufgaben-Stil (feste Werte in Variablen) bleibt, ändert sich
+am Bewertungsmodell nichts.
+
+**Folge (unverändert):** `ast`-Checks decken strukturelle Vorgaben ab
 (z. B. "`np.block` nicht verwenden", "per Indizierung"). Plot-Aufgaben
 werden locker bewertet (Figure/Subplots/Labels) plus KI-Tutor; manche
 Teile (Vibe Coding, Multiple-Choice im Browser) werden gar nicht

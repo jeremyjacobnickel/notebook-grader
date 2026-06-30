@@ -2,19 +2,21 @@
 
 Assignment definitions. **Skeleton — no tasks committed yet.**
 
-Tasks stay as `.ipynb` notebooks — the existing course material, kept as
-unchanged as possible. The Aufgabenstellung is read in the browser
-(Leukipp / ILIAS); the student edits the notebook in VS Code. The
-autograder extracts the notebook's code cells, runs them, and compares the
-resulting variables to the reference.
+Tasks are plain `.py` files. The assignment *content* stays identical to
+today's material (same problems, same variable names, the
+"store-the-result-in-a-variable" style); only the container changes from
+`.ipynb` to `.py`. Where the Aufgabenstellung and figures live — inline in
+the `.py` or in a separate program (browser / Leukipp / ILIAS) — is an
+open decision, to be made later. The autograder runs the student's `.py`
+in a fresh namespace and compares the resulting variables to the reference.
 
 Planned per-task layout:
 
 ```
 tasks/<praktikum>/
-  <praktikum>.ipynb  — the notebook the student edits
-  assets/            — data files the task needs (e.g. peppers.tiff)
-  autograder.py      — checks expected variables (np.allclose) + optional ast checks
+  <praktikum>.py   — the file the student edits (task content as today)
+  assets/          — data files the task needs (e.g. peppers.tiff)
+  autograder.py    — checks expected variables (np.allclose) + optional ast checks
 ```
 
 Grading is pass/fail: passed = at least 80 % of the total points.

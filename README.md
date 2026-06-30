@@ -33,7 +33,7 @@ cheating prevention. The local test result is what counts.
 ## Student workflow
 
 1. Load a Praktikum into the workspace via the extension.
-2. Solve the task locally in VS Code (in the `.ipynb` notebook).
+2. Solve the task locally in VS Code (in the `.py` file).
 3. Press **Run tests** → the score is shown inline, green/red.
 4. Optionally press **Hint** → a Socratic AI tip (guiding questions, not
    a finished solution).
@@ -52,10 +52,9 @@ backend with the course token.
 
 ### Tests (correctness)
 
-Grading runs **locally** on the student's machine. The grader reads the
-**code cells** from the student's notebook, runs them in a fresh namespace
-(non-interactive `Agg` backend, IPython magics like `%matplotlib widget`
-stripped), and checks the expected variables against a reference with a
+Grading runs **locally** on the student's machine. The autograder runs the
+student's `.py` solution in a fresh namespace (non-interactive matplotlib
+`Agg` backend) and checks the expected variables against a reference with a
 tolerance (`np.allclose` for arrays/scalars). This matches the tasks'
 style — most ask to *store a result in a variable* (`decimal_number`,
 `image_mv`, `forces`, …). `pytest` is the runner that wraps these checks
@@ -88,24 +87,25 @@ FastAPI, minimal. Two endpoints:
 
 ## Task format
 
-Tasks stay as **`.ipynb` notebooks** — that is the existing course
-material, and it is kept **as unchanged as possible**. Students read the
-Aufgabenstellung in the browser (Leukipp / ILIAS) and edit the notebook in
-VS Code, which renders cells and inline plots natively. Data files a task
-needs (e.g. `peppers.tiff`) ship with the task and are placed by "load
-Praktikum".
+Tasks are plain **`.py` files**. The assignment *content* stays identical
+to today's material (same problems, same variable names, the
+"store-the-result-in-a-variable" style) — only the container changes from
+`.ipynb` to `.py`, which makes grading a plain run-and-check and gives
+native `pytest` inline feedback in VS Code.
 
-The grader does not need a live kernel: it extracts the code cells and
-executes them itself (see *Tests* above), then compares the resulting
-variables to the task's reference answers.
+**Open (decide later):** whether the Aufgabenstellung and figures live
+*inline* in the `.py` (e.g. as comments / `# %%` cells) or are shown in a
+*separate program* (browser / Leukipp / ILIAS). Neither path is built yet.
+Data files a task needs (e.g. `peppers.tiff`) ship with the task and are
+placed by "load Praktikum".
 
 Target per-task layout:
 
 ```
 tasks/<praktikum>/
-  <praktikum>.ipynb  — the notebook the student edits
-  assets/            — data files the task needs (e.g. peppers.tiff)
-  autograder.py      — checks expected variables (np.allclose) + optional ast checks
+  <praktikum>.py   — the file the student edits (task content as today)
+  assets/          — data files the task needs (e.g. peppers.tiff)
+  autograder.py    — checks expected variables (np.allclose) + optional ast checks
 ```
 
 ## AI tutor role
@@ -142,7 +142,7 @@ request and checked server-side. No SSO/OAuth. The token lives in `.env`
 
 - `extension/` — VS Code extension (TypeScript) — *skeleton, planned*
 - `backend/`   — FastAPI service (`/submit`, `/hint`) — *skeleton, planned*
-- `tasks/`     — Praktikum definitions (`.ipynb` + autograder) — *skeleton, planned*
+- `tasks/`     — Praktikum definitions (`.py` + autograder) — *skeleton, planned*
 
 The previous server-side grading package (`grader/`) and its tests were
 removed in the pivot; see `DECISIONS.md`.
