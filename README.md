@@ -125,6 +125,15 @@ request and checked server-side. No SSO/OAuth. The token lives in `.env`
 The previous server-side grading package (`grader/`) and its tests were
 removed in the pivot; see `DECISIONS.md`.
 
+## Alternative / earlier direction
+
+Before this, the project was planned as a server-side grading pipeline
+that ILIAS launches over LTI. That idea is **not deleted** — it is kept as
+a documented fallback in
+[`docs/alternatives/ilias-lti-webserver.md`](docs/alternatives/ilias-lti-webserver.md),
+and a full snapshot (with the old `grader/` code) lives on the branch
+`archive/ilias-lti-webserver`.
+
 ## Running tests
 
 `pytest` (it discovers the task tests under `tasks/`). Hypothesis is used
