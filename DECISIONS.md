@@ -5,6 +5,54 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
+## 2026-06-30 — Aufgaben bleiben `.ipynb` (hebt "`.py` statt `.ipynb`" auf)
+
+**Kontext:** Prüfung der echten Praktika (1–3, Modul *Grundlagen der
+Programmierung*). Vorgabe des Maintainers: die bestehenden Aufgaben sollen
+**möglichst unverändert** bleiben.
+
+**Entscheidung:** Aufgaben bleiben Jupyter-Notebooks (`.ipynb`). Kein
+Umschreiben nach `.py`. Die frühere Entscheidung "`.py` statt `.ipynb`"
+ist damit aufgehoben.
+
+**Begründung:**
+- Die Aufgaben *sind* Notebooks; eine Umstellung wäre genau die Änderung,
+  die vermieden werden soll.
+- Die Aufgabenstellung wird im Browser (Leukipp/ILIAS) gelesen, der
+  Code im `.ipynb` in VS Code bearbeitet — VS Code rendert Zellen und
+  Inline-Plots nativ.
+- Die Bewertung braucht **keinen** Live-Kernel: der Grader liest die
+  Code-Zellen, führt sie in einem frischen Namespace aus (Backend `Agg`,
+  IPython-Magics wie `%matplotlib widget` vorher strippen) und prüft die
+  erwarteten Variablen mit `np.allclose`. Das ist leichtgewichtig und im
+  Kern das, was das frühere `grader/notebook_reader.py` tat (auf der
+  Branch `archive/ilias-lti-webserver` als Ausgangspunkt vorhanden).
+
+**Folge:** Aufgaben-Stil ist "Ergebnis in Variable speichern", nicht
+"Funktion schreiben". `ast`-Checks decken strukturelle Vorgaben ab
+(z. B. "`np.block` nicht verwenden", "per Indizierung"). Plot-Aufgaben
+werden locker bewertet (Figure/Subplots/Labels) plus KI-Tutor; manche
+Teile (Vibe Coding, Multiple-Choice im Browser) werden gar nicht
+automatisch bewertet. Daten-Assets (z. B. `peppers.tiff`) gehören zur
+Aufgabe und werden mit "Praktikum laden" abgelegt.
+
+---
+
+## 2026-06-30 — `Hypothesis` zurückgestellt (Zukunftsmusik)
+
+**Kontext:** Hebt den Eintrag "`Hypothesis` jetzt zentral" auf.
+
+**Entscheidung:** `Hypothesis` ist vorerst **kein** Bestandteil der
+Bewertung. Später wieder aufnehmbar.
+
+**Begründung:** Property-based Testing braucht Aufgaben, die als *Funktion
+mit Eingaben* formuliert sind. Die echten Aufgaben speichern feste
+Einzelwerte/Arrays in Variablen — da erzeugt Hypothesis keinen Mehrwert,
+und Hardcoding-Schutz ist erklärtes Nicht-Ziel (Pass/Fail, low-stakes).
+Greift erst, falls künftig Funktions-Aufgaben dazukommen.
+
+---
+
 ## 2026-06-29 — Architektur-Pivot: VS-Code-Extension + FastAPI-Backend
 
 **Kontext:** Das Projekt wird von einem serverseitigen Notebook-Grader

@@ -33,7 +33,7 @@ cheating prevention. The local test result is what counts.
 ## Student workflow
 
 1. Load a Praktikum into the workspace via the extension.
-2. Solve the task locally in VS Code (`.py` files).
+2. Solve the task locally in VS Code (in the `.ipynb` notebook).
 3. Press **Run tests** → the score is shown inline, green/red.
 4. Optionally press **Hint** → a Socratic AI tip (guiding questions, not
    a finished solution).
@@ -52,12 +52,28 @@ backend with the course token.
 
 ### Tests (correctness)
 
-`pytest` is the engine. **Hypothesis** (property-based testing) generates
-random inputs on every run, so "passing" means the code actually works
-and cannot be hard-coded against fixed test values. This didactically
-replaces the deliberately-omitted hidden tests. Optional `ast` checks
-cover structural requirements (e.g. a loop instead of a built-in
-function). Everything runs locally on the student's machine.
+Grading runs **locally** on the student's machine. The grader reads the
+**code cells** from the student's notebook, runs them in a fresh namespace
+(non-interactive `Agg` backend, IPython magics like `%matplotlib widget`
+stripped), and checks the expected variables against a reference with a
+tolerance (`np.allclose` for arrays/scalars). This matches the tasks'
+style — most ask to *store a result in a variable* (`decimal_number`,
+`image_mv`, `forces`, …). `pytest` is the runner that wraps these checks
+(inline green/red in VS Code).
+
+Optional `ast` checks cover structural requirements stated in the task
+(e.g. "`np.block` darf nicht verwendet werden", or "durch geschickte
+Indizierung" — i.e. no loop).
+
+Plot/visualisation tasks (matplotlib) are graded **loosely** — figure
+exists, right number of sub-plots, axis labels/titles set — with the rest
+left to self-review and the AI tutor. Some parts are not auto-graded at
+all (e.g. the "Vibe Coding" drawing, and multiple-choice parts answered in
+the browser).
+
+**Hypothesis** (property-based testing) is **future work**: it only helps
+for tasks written as a *function with inputs*, which the current
+variable-style tasks are not. Not adopted yet.
 
 ### Backend — `backend/`
 
@@ -72,18 +88,24 @@ FastAPI, minimal. Two endpoints:
 
 ## Task format
 
-Prefer `.py` files (better testable with `pytest` / VS Code) over
-`.ipynb` notebooks. Use notebooks only when a task requires
-visualisation; then test them with `nbval` / `papermill`.
+Tasks stay as **`.ipynb` notebooks** — that is the existing course
+material, and it is kept **as unchanged as possible**. Students read the
+Aufgabenstellung in the browser (Leukipp / ILIAS) and edit the notebook in
+VS Code, which renders cells and inline plots natively. Data files a task
+needs (e.g. `peppers.tiff`) ship with the task and are placed by "load
+Praktikum".
+
+The grader does not need a live kernel: it extracts the code cells and
+executes them itself (see *Tests* above), then compares the resulting
+variables to the task's reference answers.
 
 Target per-task layout:
 
 ```
 tasks/<praktikum>/
-  README.md       — Aufgabenstellung (task description)
-  <name>.py       — starter / solution file the student edits
-  test_<name>.py  — pytest + Hypothesis tests (random inputs per run)
-  structure.py    — optional ast checks (e.g. loop instead of a builtin)
+  <praktikum>.ipynb  — the notebook the student edits
+  assets/            — data files the task needs (e.g. peppers.tiff)
+  autograder.py      — checks expected variables (np.allclose) + optional ast checks
 ```
 
 ## AI tutor role
@@ -120,7 +142,7 @@ request and checked server-side. No SSO/OAuth. The token lives in `.env`
 
 - `extension/` — VS Code extension (TypeScript) — *skeleton, planned*
 - `backend/`   — FastAPI service (`/submit`, `/hint`) — *skeleton, planned*
-- `tasks/`     — Praktikum definitions (`.py` + pytest/Hypothesis) — *skeleton, planned*
+- `tasks/`     — Praktikum definitions (`.ipynb` + autograder) — *skeleton, planned*
 
 The previous server-side grading package (`grader/`) and its tests were
 removed in the pivot; see `DECISIONS.md`.
@@ -136,8 +158,7 @@ and a full snapshot (with the old `grader/` code) lives on the branch
 
 ## Running tests
 
-`pytest` (it discovers the task tests under `tasks/`). Hypothesis is used
-inside those task tests.
+`pytest` (it discovers the task autograders under `tasks/`).
 
 ## Important
 
