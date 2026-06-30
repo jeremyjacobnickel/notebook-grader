@@ -2,8 +2,8 @@
 
 A VS Code extension plus a minimal FastAPI backend for Python lab
 ("Praktikum") submissions in the *Grundlagen der Programmierung* module
-at a University of Applied Sciences (FH). It replaces the previous manual
-upload to ILIAS (via Leukipp): students load a task into their workspace,
+at a University of Applied Sciences Münster. It replaces the previous manual
+upload to Leukipp: students load a task into their workspace,
 solve it locally in VS Code, run the tests with one button to see their
 score inline (green/red), optionally ask the AI tutor for a hint, and
 submit the result to an FH backend.
