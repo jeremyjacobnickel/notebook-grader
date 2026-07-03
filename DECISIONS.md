@@ -5,6 +5,30 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
+## 2026-07-03 — Toolchain der VS-Code-Extension (`extension/`)
+
+**Kontext:** Die Studierenden-Extension ist ein eigenes npm-Paket in
+`extension/` und braucht eine TypeScript-Toolchain.
+
+**Alternativen und Entscheidungen:**
+- **TypeScript + ESLint (`typescript-eslint`)** — der offizielle
+  Standard-Aufbau aus den VS-Code-Extension-Beispielen (`yo code`).
+  Reines JavaScript wäre die einzige Alternative, verzichtet aber auf
+  die Typen der VS-Code-API.
+- **Unit-Tests mit `node --test`** (in Node eingebaut) statt
+  mocha/jest: die reinen Funktionen (Score, JUnit-XML-Parsen) brauchen
+  keinen VS-Code-Host, also reicht die Standard-Library — analog zur
+  Python-Konvention „standard library first".
+- **Kein HTTP-Paket** — das eingebaute `fetch` (Node 18+) deckt die
+  zwei Backend-Endpoints ab.
+- **Kein XML-Paket** — Node hat keinen eingebauten XML-Parser; die
+  pytest-JUnit-Ausgabe ist aber eine feste, flache Struktur, die ein
+  kleiner, unit-getesteter Regex-Parser (`grading/junitXml.ts`)
+  zuverlässig liest. Sollte das je kippen, ist der Tausch auf eine
+  Bibliothek auf dieses eine Modul begrenzt.
+
+---
+
 ## 2026-06-30 — Aufgaben-Container wird `.py`; Inhalt bleibt identisch
 
 **Kontext:** Klärung mit dem Maintainer nach Prüfung der echten Praktika

@@ -140,7 +140,8 @@ request and checked server-side. No SSO/OAuth. The token lives in `.env`
 
 ## Repository layout
 
-- `extension/` — VS Code extension (TypeScript) — *skeleton, planned*
+- `extension/` — VS Code extension (TypeScript) — implemented; see
+  `extension/README.md` for build/run instructions
 - `backend/`   — FastAPI service (`/submit`, `/hint`) — *skeleton, planned*
 - `tasks/`     — Praktikum definitions (`.py` + autograder) — *skeleton, planned*
 
