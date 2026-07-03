@@ -1,6 +1,12 @@
 {
   // Startet den Extension Development Host: ein zweites VS-Code-Fenster,
   // in das diese Extension geladen wird. Auslösen mit F5.
+  //
+  // Kein preLaunchTask: der VS-Code-Task-Runner erbt auf macOS nicht den
+  // PATH der Shell (Homebrew-node unter /opt/homebrew/bin wird nicht
+  // gefunden). Stattdessen vor dem Start einmal kompilieren:
+  //   npm run compile    (oder `npm run watch` fürs Weiterentwickeln)
+  // im integrierten Terminal (Terminal → Neues Terminal), das den PATH hat.
   "version": "0.2.0",
   "configurations": [
     {
@@ -8,8 +14,7 @@
       "type": "extensionHost",
       "request": "launch",
       "args": ["--extensionDevelopmentPath=${workspaceFolder}"],
-      "outFiles": ["${workspaceFolder}/out/**/*.js"],
-      "preLaunchTask": "npm: compile"
+      "outFiles": ["${workspaceFolder}/out/**/*.js"]
     }
   ]
 }
