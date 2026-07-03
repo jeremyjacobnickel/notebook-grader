@@ -32,6 +32,8 @@ comments where logic is non-obvious.
 - `grader/ai_grader.py`       — calls the LLM for qualitative feedback
 - `grader/report_builder.py`  — assembles the final per-student report
 - `grader/main.py`            — orchestrates the pipeline
+- `extension/`                — VS Code extension for students (load
+  task, run pytest, submit result); see `extension/README.md`
 
 ## Running tests
 
