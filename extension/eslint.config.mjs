@@ -1,14 +1,12 @@
-// ESLint-Konfiguration (Flat Config) mit den empfohlenen TypeScript-Regeln.
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
-  { ignores: ["out/", "fixtures/"] },
+  { ignores: ["out/**"] },
   ...tseslint.configs.recommended,
   {
-    files: ["src/**/*.ts"],
+    files: ["**/*.ts"],
     rules: {
-      // VS-Code-Konvention: Commands heissen z. B. "notebookGrader.runTests"
-      "@typescript-eslint/naming-convention": "off"
+      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }]
     }
   }
 );

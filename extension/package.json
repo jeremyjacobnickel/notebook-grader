@@ -1,8 +1,9 @@
 {
   "name": "notebook-grader",
   "displayName": "Notebook Grader",
-  "description": "Praktika laden, Tests lokal ausführen und das Ergebnis ans FH-Backend abgeben.",
+  "description": "Praktikum laden, pytest lokal ausführen, Ergebnis ans FH-Backend abgeben.",
   "version": "0.1.0",
+  "publisher": "fh-muenster",
   "private": true,
   "license": "MIT",
   "engines": {
@@ -12,33 +13,26 @@
     "Education"
   ],
   "main": "./out/extension.js",
+  "activationEvents": [],
   "contributes": {
     "commands": [
       {
         "command": "notebookGrader.loadPraktikum",
-        "category": "Notebook Grader",
-        "title": "Praktikum laden"
+        "title": "Notebook Grader: Praktikum laden"
       },
       {
         "command": "notebookGrader.runTests",
-        "category": "Notebook Grader",
-        "title": "Tests ausführen"
+        "title": "Notebook Grader: Tests ausführen"
       },
       {
         "command": "notebookGrader.submit",
-        "category": "Notebook Grader",
-        "title": "Ergebnis abgeben"
+        "title": "Notebook Grader: Ergebnis abgeben"
+      },
+      {
+        "command": "notebookGrader.hint",
+        "title": "Notebook Grader: KI-Tipp holen"
       }
     ],
-    "views": {
-      "explorer": [
-        {
-          "type": "webview",
-          "id": "notebookGrader.scoreView",
-          "name": "Notebook Grader"
-        }
-      ]
-    },
     "configuration": {
       "title": "Notebook Grader",
       "properties": {
@@ -50,14 +44,32 @@
         "notebookGrader.courseToken": {
           "type": "string",
           "default": "",
-          "description": "Kurs-Token für die Anmeldung am Backend. Wird bei jeder Anfrage mitgeschickt."
+          "description": "Kurs-Token für das Backend. Wird als Bearer-Token mitgeschickt und nie geloggt."
         },
         "notebookGrader.tasksSource": {
           "type": "string",
           "default": "",
-          "description": "Ordner mit den Praktikums-Aufgaben. Leer = Ordner 'tasks' im geöffneten Workspace. Relative Pfade beziehen sich auf den Workspace."
+          "description": "Ordner mit den Praktikums-Aufgaben (ein Unterordner pro Aufgabe). Leer = tasks/ im Workspace."
         }
       }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "notebookGrader",
+          "title": "Notebook Grader",
+          "icon": "$(mortar-board)"
+        }
+      ]
+    },
+    "views": {
+      "notebookGrader": [
+        {
+          "type": "webview",
+          "id": "notebookGrader.sidebar",
+          "name": "Punktestand"
+        }
+      ]
     }
   },
   "scripts": {
@@ -69,7 +81,7 @@
   "devDependencies": {
     "@types/node": "^20.14.0",
     "@types/vscode": "^1.90.0",
-    "eslint": "^9.5.0",
+    "eslint": "^9.9.0",
     "typescript": "^5.5.0",
     "typescript-eslint": "^8.0.0"
   }

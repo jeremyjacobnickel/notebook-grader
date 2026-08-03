@@ -1,77 +1,73 @@
-// Command: sokratischen KI-Tipp vom Backend holen (Button in der Sidebar).
+// Holt einen sokratischen KI-Tipp vom Backend (POST /hint).
+// Mitgeschickt werden: aktueller Code und die letzte pytest-Fehlerausgabe.
 
-import * as fs from "fs/promises";
-import * as path from "path";
 import * as vscode from "vscode";
-import { postHint } from "../backend/client";
-import { getConfig } from "../config";
-import { ScoreViewProvider } from "../sidebar/scoreViewProvider";
-import { state } from "../state";
+import * as fs from "node:fs/promises";
+import { getBackendConfig } from "../config";
+import { requestHint } from "../backend/client";
+import { state, currentPraktikumId } from "../state";
+import { findMainFile } from "./loadPraktikum";
+import type { SidebarProvider } from "../sidebar/sidebarProvider";
 
-export async function hint(sidebar: ScoreViewProvider): Promise<void> {
-  if (!state.praktikumId) {
-    vscode.window.showErrorMessage(
-      "Kein Praktikum aktiv. Lade zuerst ein Praktikum und führe die Tests aus."
-    );
-    return;
-  }
-  const { backendUrl, courseToken } = getConfig();
-  if (!backendUrl || !courseToken) {
-    vscode.window.showErrorMessage(
-      "Backend ist nicht konfiguriert. Bitte notebookGrader.backendUrl " +
-        "und notebookGrader.courseToken in den Einstellungen setzen."
+export async function hint(sidebar: SidebarProvider): Promise<void> {
+  const praktikum = currentPraktikumId();
+  if (!praktikum) {
+    void vscode.window.showErrorMessage(
+      "Notebook Grader: Kein Praktikum geladen — bitte zuerst eines laden."
     );
     return;
   }
 
-  const code = await readCurrentCode();
+  const config = getBackendConfig();
+  if (!config) {
+    void vscode.window.showErrorMessage(
+      "Notebook Grader: backendUrl und courseToken in den Einstellungen setzen (notebookGrader.*)."
+    );
+    return;
+  }
+
+  const code = await readCurrentCode(praktikum);
   if (code === undefined) {
-    vscode.window.showErrorMessage(
-      "Keine Python-Datei gefunden. Öffne deine Praktikums-Datei " +
-        "und versuche es erneut."
+    void vscode.window.showErrorMessage(
+      `Notebook Grader: Keine Python-Datei gefunden — bitte ${praktikum}.py öffnen.`
     );
     return;
   }
 
-  let hintText: string;
   try {
-    hintText = await vscode.window.withProgress(
+    const hintText = await vscode.window.withProgress(
       {
-        location: vscode.ProgressLocation.Window,
-        title: "Hole Tipp…",
+        location: vscode.ProgressLocation.Notification,
+        title: "Notebook Grader: Tipp wird geholt …",
       },
-      () =>
-        postHint(backendUrl, courseToken, {
-          praktikum: state.praktikumId as string,
-          code,
-          traceback: state.lastTraceback,
-        })
+      () => requestHint(config, praktikum, code, state.lastTraceback)
     );
-  } catch (error) {
-    vscode.window.showErrorMessage(
-      `Tipp holen fehlgeschlagen: ${(error as Error).message}`
+    state.lastHint = hintText;
+    sidebar.refresh();
+    // Sidebar in den Vordergrund holen, damit der Tipp sichtbar ist
+    void vscode.commands.executeCommand("notebookGrader.sidebar.focus");
+  } catch {
+    void vscode.window.showErrorMessage(
+      "Notebook Grader: Das Backend ist gerade nicht erreichbar. Bitte später erneut versuchen."
     );
-    return;
   }
-
-  sidebar.showHint(hintText);
 }
 
-// Inhalt der aktiven .py-Datei; wenn keine offen ist, die
-// Hauptdatei <id>.py des geladenen Praktikums.
-async function readCurrentCode(): Promise<string | undefined> {
-  const activeFile = vscode.window.activeTextEditor?.document;
-  if (activeFile && activeFile.fileName.endsWith(".py")) {
-    return activeFile.getText();
+// Inhalt der aktuellen .py-Datei: bevorzugt der aktive Editor,
+// sonst die Hauptdatei aus dem Task-Ordner (<id>.py oder aufgabe_1.py).
+async function readCurrentCode(praktikum: string): Promise<string | undefined> {
+  const editor = vscode.window.activeTextEditor;
+  if (editor && editor.document.fileName.endsWith(".py")) {
+    return editor.document.getText();
   }
-  if (state.taskDir && state.praktikumId) {
-    try {
-      return await fs.readFile(
-        path.join(state.taskDir, `${state.praktikumId}.py`),
-        "utf8"
-      );
-    } catch {
-      return undefined;
+  if (state.taskDir) {
+    const mainFile = await findMainFile(state.taskDir, praktikum);
+    if (mainFile) {
+      try {
+        return await fs.readFile(mainFile, "utf8");
+      } catch {
+        return undefined;
+      }
     }
   }
   return undefined;

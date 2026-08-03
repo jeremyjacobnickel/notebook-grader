@@ -1,68 +1,69 @@
-// Command: pytest ausführen und Ergebnis in Sidebar + StatusBar zeigen.
+// Führt pytest im Task-Ordner aus, berechnet den Punktestand und
+// aktualisiert Sidebar + StatusBar.
 
-import * as path from "path";
 import * as vscode from "vscode";
+import { runPytest } from "../grading/runner";
+import { parseJunitXml } from "../grading/junit";
 import { computeScore } from "../grading/score";
-import { runPytest } from "../grading/pytestRunner";
-import { ScoreViewProvider } from "../sidebar/scoreViewProvider";
-import { updateStatusBarItem } from "../statusBar";
 import { state } from "../state";
+import { updateStatusBar } from "../statusBar";
+import type { SidebarProvider } from "../sidebar/sidebarProvider";
 
 export async function runTests(
-  sidebar: ScoreViewProvider,
-  statusBarItem: vscode.StatusBarItem
+  statusBar: vscode.StatusBarItem,
+  sidebar: SidebarProvider
 ): Promise<void> {
-  const taskDir = resolveTaskDir();
-  if (!taskDir) {
-    vscode.window.showErrorMessage(
-      "Kein Praktikums-Ordner gefunden. Lade zuerst ein Praktikum " +
-        "(Notebook Grader: Praktikum laden) oder öffne eine .py-Datei daraus."
+  const cwd = state.taskDir ?? vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+  if (!cwd) {
+    void vscode.window.showErrorMessage(
+      "Notebook Grader: Kein Task- oder Workspace-Ordner gefunden. Erst ein Praktikum laden."
     );
     return;
   }
-  // Falls das Praktikum nicht über loadPraktikum kam, die Id aus dem
-  // Ordnernamen ableiten (wird für submit und hint gebraucht).
-  state.taskDir = taskDir;
-  state.praktikumId = state.praktikumId ?? path.basename(taskDir);
 
-  // Ungespeicherte Änderungen würden sonst nicht mitgetestet.
+  // Ungespeicherte Änderungen sichern, sonst testet pytest den alten Stand
   await vscode.workspace.saveAll(false);
 
   let run;
   try {
     run = await vscode.window.withProgress(
       {
-        location: vscode.ProgressLocation.Window,
-        title: "pytest läuft…",
+        location: vscode.ProgressLocation.Notification,
+        title: "Notebook Grader: Tests laufen …",
       },
-      () => runPytest(taskDir)
+      () => runPytest(cwd)
     );
-  } catch (error) {
-    // Fehlerausgabe für den Tipp-Command aufheben.
-    state.lastTraceback = (error as Error).message;
-    vscode.window.showErrorMessage((error as Error).message);
+  } catch {
+    // spawn-Fehler: python selbst wurde nicht gefunden
+    void vscode.window.showErrorMessage(
+      "Notebook Grader: `python` wurde nicht gefunden. Bitte Python installieren und in PATH aufnehmen."
+    );
     return;
   }
 
-  const passedCount = run.testcases.filter((t) => t.passed).length;
-  const result = computeScore(passedCount, run.testcases.length);
-  state.lastResult = result;
-  // Bei fehlgeschlagenen Tests die pytest-Ausgabe für den Tipp merken.
-  state.lastTraceback = result.passed === result.total ? "" : run.output;
-
-  sidebar.showResult(result);
-  updateStatusBarItem(statusBarItem, result);
-}
-
-// Ordner, in dem pytest laufen soll: das geladene Praktikum, sonst der
-// Ordner der aktiven .py-Datei, sonst der Workspace selbst.
-function resolveTaskDir(): string | undefined {
-  if (state.taskDir) {
-    return state.taskDir;
+  if (run.junitXml === null) {
+    // pytest kam nicht bis zur XML (z. B. pytest fehlt oder Import-Fehler).
+    // Ausgabe merken, damit der KI-Tipp etwas zum Arbeiten hat.
+    state.lastTraceback = run.output;
+    void vscode.window.showErrorMessage(
+      "Notebook Grader: pytest konnte nicht ausgeführt werden. " +
+        "Ist pytest installiert (pip install pytest)? Details im Tipp oder Terminal."
+    );
+    return;
   }
-  const activeFile = vscode.window.activeTextEditor?.document;
-  if (activeFile && activeFile.fileName.endsWith(".py")) {
-    return path.dirname(activeFile.fileName);
+
+  const counts = parseJunitXml(run.junitXml);
+  const score = computeScore(counts.passed, counts.total);
+  state.lastScore = score;
+  // Bei komplett grünem Lauf gibt es keinen Fehler zu erklären
+  state.lastTraceback = run.exitCode === 0 ? "" : run.output;
+
+  if (counts.total === 0) {
+    void vscode.window.showWarningMessage(
+      "Notebook Grader: Keine Tests gefunden (test_*.py vorhanden?)."
+    );
   }
-  return vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
+
+  updateStatusBar(statusBar, score);
+  sidebar.refresh();
 }

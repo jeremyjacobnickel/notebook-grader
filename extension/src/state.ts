@@ -1,21 +1,25 @@
-// Gemeinsamer Sitzungszustand der Commands (ein Extension-Host, ein Objekt).
+// Gemeinsamer Zustand der Extension — bewusst ein einfaches Objekt,
+// kein Framework. Lebt so lange wie das Extension-Host-Fenster.
 
-import { ScoreResult } from "./grading/score";
+import * as path from "node:path";
+import type { ScoreResult } from "./grading/score";
 
-export interface SessionState {
-  /** Id des geladenen Praktikums, z. B. "1_praktikum". */
-  praktikumId: string | undefined;
-  /** Ordner, in dem pytest läuft. */
-  taskDir: string | undefined;
-  /** Ergebnis des letzten Testlaufs. */
-  lastResult: ScoreResult | undefined;
-  /** pytest-Ausgabe des letzten fehlgeschlagenen Laufs (für den Tipp). */
-  lastTraceback: string;
-}
-
-export const state: SessionState = {
-  praktikumId: undefined,
-  taskDir: undefined,
-  lastResult: undefined,
+export const state = {
+  praktikumId: undefined as string | undefined,
+  taskDir: undefined as string | undefined,
+  lastScore: undefined as ScoreResult | undefined,
+  // Letzte pytest-Fehlerausgabe — geht mit an /hint
   lastTraceback: "",
+  lastHint: "",
 };
+
+// Praktikums-Name für die Backend-Requests. Fallback: Ordnername.
+export function currentPraktikumId(): string | undefined {
+  if (state.praktikumId) {
+    return state.praktikumId;
+  }
+  if (state.taskDir) {
+    return path.basename(state.taskDir);
+  }
+  return undefined;
+}

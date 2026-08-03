@@ -1,75 +1,130 @@
-// Command: Praktikum aus der Aufgaben-Quelle in den Workspace laden.
+// Lädt ein Praktikum in den Arbeitsordner work/<id>/ des Workspace.
+//
+// Naht für später: listAvailableTasks() und copyTask() sind die Stellen,
+// die auf einen Backend-Endpoint (Download statt lokaler Ordner)
+// umgestellt werden können, ohne dass sich der Command ändert.
 
-import * as path from "path";
 import * as vscode from "vscode";
-import { getConfig } from "../config";
+import * as fs from "node:fs/promises";
+import * as path from "node:path";
+import { getTasksSource } from "../config";
 import { state } from "../state";
-import { copyTask, listTaskIds } from "../taskSource";
+import type { SidebarProvider } from "../sidebar/sidebarProvider";
 
-export async function loadPraktikum(): Promise<void> {
-  const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
-  if (!workspaceFolder) {
-    vscode.window.showErrorMessage(
-      "Bitte öffne zuerst einen Ordner (Datei → Ordner öffnen), " +
-        "in den das Praktikum geladen werden soll."
+export async function loadPraktikum(sidebar: SidebarProvider): Promise<void> {
+  const workspace = vscode.workspace.workspaceFolders?.[0];
+  if (!workspace) {
+    void vscode.window.showErrorMessage(
+      "Notebook Grader: Bitte zuerst einen Ordner öffnen."
     );
     return;
   }
-  const workspaceRoot = workspaceFolder.uri.fsPath;
+  const workspaceRoot = workspace.uri.fsPath;
 
-  // Quelle: Einstellung, sonst der tasks/-Ordner im Workspace.
-  // Relative Pfade beziehen sich auf den Workspace.
-  const configured = getConfig().tasksSource;
-  const sourceDir = configured
-    ? path.resolve(workspaceRoot, configured)
-    : path.join(workspaceRoot, "tasks");
-
-  let taskIds: string[];
-  try {
-    taskIds = await listTaskIds(sourceDir);
-  } catch {
-    vscode.window.showErrorMessage(
-      `Der Aufgaben-Ordner wurde nicht gefunden: ${sourceDir}. ` +
-        "Prüfe die Einstellung notebookGrader.tasksSource."
-    );
-    return;
-  }
-  if (taskIds.length === 0) {
-    vscode.window.showWarningMessage(
-      `Im Aufgaben-Ordner liegen keine Praktika: ${sourceDir}`
+  const sourceDir = resolveTasksSource(workspaceRoot);
+  const ids = await listAvailableTasks(sourceDir);
+  if (ids.length === 0) {
+    void vscode.window.showErrorMessage(
+      `Notebook Grader: Keine Aufgaben in "${sourceDir}" gefunden. ` +
+        "Ordner anlegen oder die Einstellung notebookGrader.tasksSource setzen."
     );
     return;
   }
 
-  const id = await vscode.window.showQuickPick(taskIds, {
-    placeHolder: "Welches Praktikum möchtest du laden?",
+  const id = await vscode.window.showQuickPick(ids, {
+    placeHolder: "Welches Praktikum laden?",
   });
   if (!id) {
     return; // abgebrochen
   }
 
-  const targetDir = path.join(workspaceRoot, id);
+  const targetDir = path.join(workspaceRoot, "work", id);
+  const result = await copyTask(path.join(sourceDir, id), targetDir);
+  if (result === "existing") {
+    // Nicht überschreiben — sonst wären Änderungen des Studierenden weg
+    void vscode.window.showInformationMessage(
+      `Notebook Grader: "${id}" ist schon im Arbeitsordner — vorhandener Stand wird weiterverwendet.`
+    );
+  }
+
+  state.praktikumId = id;
+  state.taskDir = targetDir;
+  sidebar.refresh();
+
+  await openMainFile(targetDir, id);
+}
+
+function resolveTasksSource(workspaceRoot: string): string {
+  const setting = getTasksSource();
+  if (!setting) {
+    return path.join(workspaceRoot, "tasks");
+  }
+  return path.isAbsolute(setting)
+    ? setting
+    : path.join(workspaceRoot, setting);
+}
+
+async function listAvailableTasks(sourceDir: string): Promise<string[]> {
   try {
-    await copyTask(sourceDir, id, targetDir);
-  } catch (error) {
-    vscode.window.showErrorMessage(
-      `Das Praktikum konnte nicht kopiert werden: ${(error as Error).message}`
+    const entries = await fs.readdir(sourceDir, { withFileTypes: true });
+    return entries
+      .filter((entry) => entry.isDirectory())
+      .map((entry) => entry.name)
+      .sort();
+  } catch {
+    return []; // Ordner existiert nicht
+  }
+}
+
+async function copyTask(
+  sourceDir: string,
+  targetDir: string
+): Promise<"copied" | "existing"> {
+  try {
+    await fs.stat(targetDir);
+    return "existing";
+  } catch {
+    // Zielordner existiert noch nicht — gut, dann kopieren
+  }
+  await fs.cp(sourceDir, targetDir, { recursive: true });
+  return "copied";
+}
+
+async function openMainFile(targetDir: string, id: string): Promise<void> {
+  const mainFile = await findMainFile(targetDir, id);
+  if (!mainFile) {
+    void vscode.window.showWarningMessage(
+      `Notebook Grader: In der Aufgabe fehlt ${id}.py bzw. aufgabe_*.py.`
     );
     return;
   }
+  const doc = await vscode.workspace.openTextDocument(mainFile);
+  await vscode.window.showTextDocument(doc);
+}
 
-  // Neues Praktikum = alter Punktestand und Traceback sind hinfällig.
-  state.praktikumId = id;
-  state.taskDir = targetDir;
-  state.lastResult = undefined;
-  state.lastTraceback = "";
-
-  const mainFile = vscode.Uri.file(path.join(targetDir, `${id}.py`));
+// Bevorzugt <id>.py; sonst die erste Aufgaben-Datei (aufgabe_1.py, ...),
+// wie sie der Konverter grader/task_exporter.py erzeugt.
+export async function findMainFile(
+  targetDir: string,
+  id: string
+): Promise<string | undefined> {
+  const idFile = path.join(targetDir, `${id}.py`);
   try {
-    await vscode.window.showTextDocument(mainFile);
+    await fs.stat(idFile);
+    return idFile;
   } catch {
-    vscode.window.showWarningMessage(
-      `Das Praktikum wurde geladen, aber ${id}.py wurde darin nicht gefunden.`
-    );
+    // weiter mit aufgabe_*.py
   }
+  try {
+    const entries = await fs.readdir(targetDir);
+    const aufgaben = entries
+      .filter((name) => /^aufgabe_\d+\.py$/.test(name))
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    if (aufgaben.length > 0) {
+      return path.join(targetDir, aufgaben[0]);
+    }
+  } catch {
+    // Ordner nicht lesbar -- dann gibt es keine Hauptdatei
+  }
+  return undefined;
 }

@@ -1,76 +1,56 @@
-// HTTP-Client für das FH-Backend. Nutzt das eingebaute fetch (Node 18+).
-// Wichtig: Der courseToken wandert nur in den Authorization-Header,
-// nie in Logs oder Fehlermeldungen.
+// HTTP-Client für das FH-Backend. Nutzt die eingebaute fetch-API
+// (Node 18+), keine zusätzliche HTTP-Bibliothek.
+// Der courseToken wandert nur in den Authorization-Header — nie ins Log.
 
-export interface SubmitPayload {
-  praktikum: string;
-  passed: boolean;
-  score: number;
-  total: number;
-  percentage: number;
-}
+import type { BackendConfig } from "../config";
+import type { ScoreResult } from "../grading/score";
 
-export interface HintPayload {
-  praktikum: string;
-  code: string;
-  traceback: string;
-}
-
-/** Schickt das Ergebnis an POST {backendUrl}/submit. */
-export async function postSubmit(
-  backendUrl: string,
-  courseToken: string,
-  payload: SubmitPayload
+export async function submitResult(
+  config: BackendConfig,
+  praktikum: string,
+  score: ScoreResult
 ): Promise<void> {
-  const response = await postJson(`${backendUrl}/submit`, courseToken, payload);
-  if (response.ok !== true) {
-    throw new Error("Das Backend hat die Abgabe nicht bestätigt.");
+  const body = {
+    praktikum,
+    passed: score.isPass,
+    score: score.passed,
+    total: score.total,
+    percentage: score.percentage,
+  };
+  const data = await postJson(config, "/submit", body);
+  if (data.ok !== true) {
+    throw new Error("Backend hat die Abgabe nicht bestätigt.");
   }
 }
 
-/** Holt einen sokratischen Tipp von POST {backendUrl}/hint. */
-export async function postHint(
-  backendUrl: string,
-  courseToken: string,
-  payload: HintPayload
+export async function requestHint(
+  config: BackendConfig,
+  praktikum: string,
+  code: string,
+  traceback: string
 ): Promise<string> {
-  const response = await postJson(`${backendUrl}/hint`, courseToken, payload);
-  if (typeof response.hint !== "string") {
-    throw new Error("Das Backend hat keinen Tipp zurückgegeben.");
+  const data = await postJson(config, "/hint", { praktikum, code, traceback });
+  if (typeof data.hint !== "string") {
+    throw new Error("Backend-Antwort enthält keinen Tipp.");
   }
-  return response.hint;
+  return data.hint;
 }
 
 async function postJson(
-  url: string,
-  courseToken: string,
+  config: BackendConfig,
+  route: string,
   body: unknown
 ): Promise<Record<string, unknown>> {
-  let response: Response;
-  try {
-    response = await fetch(url, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${courseToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-  } catch {
-    // fetch wirft z. B. bei DNS-Fehler oder abgelehnter Verbindung.
-    throw new Error(
-      "Das Backend ist nicht erreichbar. Bitte prüfe die Einstellung " +
-        "notebookGrader.backendUrl und deine Internetverbindung."
-    );
-  }
+  const response = await fetch(config.backendUrl + route, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${config.courseToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  });
   if (!response.ok) {
-    throw new Error(
-      `Das Backend hat mit Status ${response.status} geantwortet.`
-    );
+    throw new Error(`Backend antwortete mit HTTP ${response.status}.`);
   }
-  try {
-    return (await response.json()) as Record<string, unknown>;
-  } catch {
-    throw new Error("Das Backend hat kein gültiges JSON zurückgegeben.");
-  }
+  return (await response.json()) as Record<string, unknown>;
 }

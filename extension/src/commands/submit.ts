@@ -1,48 +1,45 @@
-// Command: Bestanden/Nicht-bestanden-Ergebnis ans FH-Backend schicken.
+// Schickt das letzte Testergebnis an das FH-Backend (POST /submit).
 
 import * as vscode from "vscode";
-import { postSubmit } from "../backend/client";
-import { getConfig } from "../config";
-import { state } from "../state";
+import { getBackendConfig } from "../config";
+import { submitResult } from "../backend/client";
+import { state, currentPraktikumId } from "../state";
 
 export async function submit(): Promise<void> {
-  if (!state.lastResult || !state.praktikumId) {
-    vscode.window.showErrorMessage(
-      "Es gibt noch kein Ergebnis. Führe zuerst " +
-        "»Notebook Grader: Tests ausführen« aus."
-    );
-    return;
-  }
-  const { backendUrl, courseToken } = getConfig();
-  if (!backendUrl || !courseToken) {
-    vscode.window.showErrorMessage(
-      "Backend ist nicht konfiguriert. Bitte notebookGrader.backendUrl " +
-        "und notebookGrader.courseToken in den Einstellungen setzen."
+  const score = state.lastScore;
+  if (!score) {
+    void vscode.window.showInformationMessage(
+      "Notebook Grader: Bitte zuerst die Tests ausführen (Notebook Grader: Tests ausführen)."
     );
     return;
   }
 
-  const result = state.lastResult;
+  const praktikum = currentPraktikumId();
+  if (!praktikum) {
+    void vscode.window.showErrorMessage(
+      "Notebook Grader: Kein Praktikum geladen — bitte zuerst eines laden."
+    );
+    return;
+  }
+
+  const config = getBackendConfig();
+  if (!config) {
+    void vscode.window.showErrorMessage(
+      "Notebook Grader: backendUrl und courseToken in den Einstellungen setzen (notebookGrader.*)."
+    );
+    return;
+  }
+
   try {
-    await postSubmit(backendUrl, courseToken, {
-      praktikum: state.praktikumId,
-      passed: result.isPass,
-      score: result.passed,
-      total: result.total,
-      percentage: result.percentage,
-    });
-  } catch (error) {
-    vscode.window.showErrorMessage(
-      `Abgabe fehlgeschlagen: ${(error as Error).message}`
+    await submitResult(config, praktikum, score);
+    const status = score.isPass ? "bestanden" : "nicht bestanden";
+    void vscode.window.showInformationMessage(
+      `Notebook Grader: Abgegeben — ${score.passed}/${score.total} Punkte (${score.percentage} %), ${status}.`
     );
-    return;
+  } catch {
+    // Bewusst keine technischen Details — freundliche Meldung reicht
+    void vscode.window.showErrorMessage(
+      "Notebook Grader: Das Backend ist gerade nicht erreichbar. Bitte später erneut abgeben."
+    );
   }
-
-  vscode.window.showInformationMessage(
-    result.isPass
-      ? `Abgabe übermittelt: ${state.praktikumId} bestanden ` +
-          `(${result.percentage.toFixed(1)} %). 🎉`
-      : `Abgabe übermittelt: ${state.praktikumId} noch nicht bestanden ` +
-          `(${result.percentage.toFixed(1)} %, mindestens 80 % nötig).`
-  );
 }

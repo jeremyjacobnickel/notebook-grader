@@ -1,37 +1,31 @@
-// Einstiegspunkt: registriert die Commands, die Sidebar und das StatusBar-Item.
+// Einstiegspunkt: registriert die Commands, die Sidebar und die StatusBar.
 
 import * as vscode from "vscode";
-import { hint } from "./commands/hint";
 import { loadPraktikum } from "./commands/loadPraktikum";
 import { runTests } from "./commands/runTests";
 import { submit } from "./commands/submit";
-import { ScoreViewProvider } from "./sidebar/scoreViewProvider";
-import { createStatusBarItem } from "./statusBar";
+import { hint } from "./commands/hint";
+import { SidebarProvider } from "./sidebar/sidebarProvider";
+import { createStatusBar } from "./statusBar";
 
 export function activate(context: vscode.ExtensionContext): void {
-  const sidebar = new ScoreViewProvider();
-  const statusBarItem = createStatusBarItem();
+  const sidebar = new SidebarProvider();
+  const statusBar = createStatusBar();
 
   context.subscriptions.push(
-    statusBarItem,
-    vscode.window.registerWebviewViewProvider(
-      ScoreViewProvider.viewId,
-      sidebar
-    ),
-    vscode.commands.registerCommand(
-      "notebookGrader.loadPraktikum",
-      loadPraktikum
+    vscode.window.registerWebviewViewProvider(SidebarProvider.viewId, sidebar),
+    statusBar,
+    vscode.commands.registerCommand("notebookGrader.loadPraktikum", () =>
+      loadPraktikum(sidebar)
     ),
     vscode.commands.registerCommand("notebookGrader.runTests", () =>
-      runTests(sidebar, statusBarItem)
+      runTests(statusBar, sidebar)
     ),
-    vscode.commands.registerCommand("notebookGrader.submit", submit),
-    // hint steht nicht in der Command-Palette (package.json), sondern
-    // wird vom Tipp-Button in der Sidebar ausgelöst.
-    vscode.commands.registerCommand("notebookGrader.hint", () =>
-      hint(sidebar)
-    )
+    vscode.commands.registerCommand("notebookGrader.submit", () => submit()),
+    vscode.commands.registerCommand("notebookGrader.hint", () => hint(sidebar))
   );
 }
 
-export function deactivate(): void {}
+export function deactivate(): void {
+  // nichts aufzuräumen — alles hängt an context.subscriptions
+}

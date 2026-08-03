@@ -1,19 +1,28 @@
-// Liest die Extension-Einstellungen. Der courseToken darf nie geloggt werden.
+// Liest die Extension-Einstellungen.
+// Wichtig: der courseToken darf nirgends geloggt werden.
 
 import * as vscode from "vscode";
 
-export interface GraderConfig {
+export interface BackendConfig {
   backendUrl: string;
   courseToken: string;
-  tasksSource: string;
 }
 
-export function getConfig(): GraderConfig {
-  const config = vscode.workspace.getConfiguration("notebookGrader");
-  return {
-    // Ohne abschliessende Slashes, damit `${backendUrl}/submit` sauber ist.
-    backendUrl: config.get<string>("backendUrl", "").trim().replace(/\/+$/, ""),
-    courseToken: config.get<string>("courseToken", "").trim(),
-    tasksSource: config.get<string>("tasksSource", "").trim(),
-  };
+// undefined, wenn backendUrl oder courseToken fehlen — der Aufrufer
+// zeigt dann eine Meldung mit Hinweis auf die Einstellungen.
+export function getBackendConfig(): BackendConfig | undefined {
+  const cfg = vscode.workspace.getConfiguration("notebookGrader");
+  const backendUrl = (cfg.get<string>("backendUrl") ?? "")
+    .trim()
+    .replace(/\/+$/, ""); // trailing Slash entfernen, Routen hängen "/submit" an
+  const courseToken = (cfg.get<string>("courseToken") ?? "").trim();
+  if (!backendUrl || !courseToken) {
+    return undefined;
+  }
+  return { backendUrl, courseToken };
+}
+
+export function getTasksSource(): string {
+  const cfg = vscode.workspace.getConfiguration("notebookGrader");
+  return (cfg.get<string>("tasksSource") ?? "").trim();
 }

@@ -1,58 +1,79 @@
 # Notebook Grader — VS-Code-Extension
 
-Die Extension für Studierende: Praktikum in den Workspace laden,
-pytest lokal ausführen (Punktestand in Sidebar und Statusleiste),
-bei Bedarf einen KI-Tipp holen und das Ergebnis ans FH-Backend
-abgeben. Bestanden = mindestens 80 % der Tests grün.
+Die Studierenden-Seite des Notebook Graders: Praktikum laden, pytest
+lokal ausführen, Punktestand sehen, KI-Tipp holen, Ergebnis abgeben.
+Bestanden = mindestens 80 % der Punkte.
+
+## Voraussetzungen
+
+- VS Code ≥ 1.90
+- Node.js ≥ 18 (zum Bauen)
+- Python mit pytest (`pip install pytest`) — zum Ausführen der Tests
 
 ## Bauen und starten
-
-Voraussetzungen: Node.js 18+, VS Code 1.90+, Python mit pytest.
 
 ```bash
 cd extension
 npm install
-npm run compile   # TypeScript nach out/ kompilieren
+npm run compile   # TypeScript bauen
 npm run lint      # ESLint
-npm test          # Unit-Tests (Score- und JUnit-XML-Logik)
+npm test          # Unit-Tests (reine Score-/XML-Logik, node:test)
 ```
 
 Zum Ausprobieren: den Ordner `extension/` in VS Code öffnen und mit
-**F5** (Run Extension) den Extension Development Host starten. Dort
-einen Ordner öffnen, der einen `tasks/`-Ordner enthält — zum Beispiel
-`extension/fixtures/` aus diesem Repo, das ein Mini-Praktikum
-(`1_praktikum`) mit drei trivialen pytest-Tests mitbringt.
+**F5** den Extension Development Host starten. Dort einen Workspace
+öffnen und die Einstellung `notebookGrader.tasksSource` auf den
+mitgelieferten Beispiel-Ordner zeigen lassen
+(`<repo>/extension/fixtures/tasks`) — oder einen eigenen `tasks/`-Ordner
+im Workspace anlegen.
 
-## Commands (Command-Palette, Kategorie „Notebook Grader“)
+## Commands (Befehlspalette)
 
-- **Praktikum laden** — listet die Unterordner der Aufgaben-Quelle,
-  kopiert das gewählte Praktikum in den Workspace und öffnet `<id>.py`.
-- **Tests ausführen** — startet `python -m pytest` im Praktikums-Ordner,
-  zeigt `bestanden/gesamt`, Prozent und Status in der Sidebar
-  („Notebook Grader“ im Explorer) und der Statusleiste.
-- **Ergebnis abgeben** — schickt das Ergebnis an `POST {backendUrl}/submit`.
+| Command | Zweck |
+|---|---|
+| `Notebook Grader: Praktikum laden` | Aufgabe aus `tasksSource` wählen, nach `work/<id>/` kopieren, `<id>.py` öffnen |
+| `Notebook Grader: Tests ausführen` | `python -m pytest --junitxml=…` im Task-Ordner, Ergebnis in Sidebar + StatusBar |
+| `Notebook Grader: Ergebnis abgeben` | Schickt das letzte Ergebnis an `POST {backendUrl}/submit` |
+| `Notebook Grader: KI-Tipp holen` | Schickt Code + letzte Fehlerausgabe an `POST {backendUrl}/hint`, zeigt den Tipp in der Sidebar |
 
-Der **Tipp holen**-Button in der Sidebar ruft `POST {backendUrl}/hint`
-mit dem aktuellen Code und der letzten pytest-Fehlerausgabe auf und
-zeigt den sokratischen Tipp an.
+Die Sidebar (Aktivitätsleiste → „Notebook Grader") zeigt Punktestand,
+Bestanden-Status und den „Tipp holen"-Button.
 
 ## Einstellungen
 
-| Einstellung                 | Bedeutung                                             |
-| --------------------------- | ----------------------------------------------------- |
-| `notebookGrader.backendUrl` | Basis-URL des FH-Backends                             |
-| `notebookGrader.courseToken`| Kurs-Token, wird als `Authorization: Bearer` gesendet |
-| `notebookGrader.tasksSource`| Aufgaben-Ordner (leer = `tasks/` im Workspace)        |
+| Einstellung | Bedeutung |
+|---|---|
+| `notebookGrader.backendUrl` | Basis-URL des FH-Backends |
+| `notebookGrader.courseToken` | Kurs-Token; wird als `Authorization: Bearer …` mitgeschickt, nie geloggt |
+| `notebookGrader.tasksSource` | Ordner mit den Aufgaben (ein Unterordner pro Aufgabe); leer = `tasks/` im Workspace |
 
-Der Kurs-Token wird nie geloggt.
+## Backend-Contracts (Client-Sicht)
+
+Beide Requests: `Authorization: Bearer <courseToken>`,
+`Content-Type: application/json`.
+
+```
+POST {backendUrl}/submit
+  → { "praktikum": "beispiel", "passed": true, "score": 6, "total": 7, "percentage": 85.7 }
+  ← { "ok": true }
+
+POST {backendUrl}/hint
+  → { "praktikum": "beispiel", "code": "<Inhalt der .py-Datei>", "traceback": "<pytest-Ausgabe oder ''>" }
+  ← { "hint": "..." }
+```
 
 ## Aufbau
 
-- `src/extension.ts` — activate: Commands, Sidebar, StatusBar registrieren
-- `src/commands/` — je Command eine Datei
-- `src/grading/` — pytest-Runner plus reine Score-/XML-Parse-Logik
-- `src/backend/client.ts` — HTTP-Client (eingebautes fetch)
-- `src/sidebar/` — WebviewViewProvider für den Punktestand
-- `src/taskSource.ts` — Aufgaben-Quelle (lokaler Ordner; Naht für einen
-  späteren Backend-Download)
-- `src/test/` — Unit-Tests, laufen mit `node --test` ohne VS Code
+```
+src/
+  extension.ts            Einstieg: Commands, Sidebar, StatusBar registrieren
+  config.ts               Einstellungen lesen (Token nie loggen)
+  state.ts                gemeinsamer Zustand (Praktikum, Score, Traceback)
+  statusBar.ts            StatusBar-Item (grün/rot)
+  commands/               je Command eine Datei
+  grading/                pytest-Runner + reine Score-/JUnit-Logik (unit-getestet)
+  backend/client.ts       fetch-Aufrufe für /submit und /hint
+  sidebar/                WebviewViewProvider (Punktestand + Tipp-Button)
+  test/                   Unit-Tests (node --test)
+fixtures/tasks/beispiel/  Mini-Aufgabe zum manuellen Durchspielen
+```
