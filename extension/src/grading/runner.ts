@@ -37,9 +37,13 @@ function spawnPytest(
   xmlPath: string
 ): Promise<{ output: string; exitCode: number | null }> {
   return new Promise((resolve, reject) => {
-    const child = cp.spawn("python", ["-m", "pytest", `--junitxml=${xmlPath}`], {
-      cwd,
-    });
+    // --continue-on-collection-errors: eine Aufgaben-Datei mit Syntaxfehler
+    // soll nicht den ganzen Testlauf der übrigen Aufgaben stoppen
+    const child = cp.spawn(
+      "python",
+      ["-m", "pytest", "--continue-on-collection-errors", `--junitxml=${xmlPath}`],
+      { cwd }
+    );
     let output = "";
     child.stdout.on("data", (chunk) => (output += chunk));
     child.stderr.on("data", (chunk) => (output += chunk));

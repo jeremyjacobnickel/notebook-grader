@@ -91,15 +91,40 @@ async function copyTask(
 }
 
 async function openMainFile(targetDir: string, id: string): Promise<void> {
-  const mainFile = path.join(targetDir, `${id}.py`);
-  try {
-    await fs.stat(mainFile);
-  } catch {
+  const mainFile = await findMainFile(targetDir, id);
+  if (!mainFile) {
     void vscode.window.showWarningMessage(
-      `Notebook Grader: In der Aufgabe fehlt die Datei ${id}.py.`
+      `Notebook Grader: In der Aufgabe fehlt ${id}.py bzw. aufgabe_*.py.`
     );
     return;
   }
   const doc = await vscode.workspace.openTextDocument(mainFile);
   await vscode.window.showTextDocument(doc);
+}
+
+// Bevorzugt <id>.py; sonst die erste Aufgaben-Datei (aufgabe_1.py, ...),
+// wie sie der Konverter grader/task_exporter.py erzeugt.
+export async function findMainFile(
+  targetDir: string,
+  id: string
+): Promise<string | undefined> {
+  const idFile = path.join(targetDir, `${id}.py`);
+  try {
+    await fs.stat(idFile);
+    return idFile;
+  } catch {
+    // weiter mit aufgabe_*.py
+  }
+  try {
+    const entries = await fs.readdir(targetDir);
+    const aufgaben = entries
+      .filter((name) => /^aufgabe_\d+\.py$/.test(name))
+      .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+    if (aufgaben.length > 0) {
+      return path.join(targetDir, aufgaben[0]);
+    }
+  } catch {
+    // Ordner nicht lesbar -- dann gibt es keine Hauptdatei
+  }
+  return undefined;
 }

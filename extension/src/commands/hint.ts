@@ -3,10 +3,10 @@
 
 import * as vscode from "vscode";
 import * as fs from "node:fs/promises";
-import * as path from "node:path";
 import { getBackendConfig } from "../config";
 import { requestHint } from "../backend/client";
 import { state, currentPraktikumId } from "../state";
+import { findMainFile } from "./loadPraktikum";
 import type { SidebarProvider } from "../sidebar/sidebarProvider";
 
 export async function hint(sidebar: SidebarProvider): Promise<void> {
@@ -54,20 +54,20 @@ export async function hint(sidebar: SidebarProvider): Promise<void> {
 }
 
 // Inhalt der aktuellen .py-Datei: bevorzugt der aktive Editor,
-// sonst die Aufgaben-Datei <id>.py aus dem Task-Ordner.
+// sonst die Hauptdatei aus dem Task-Ordner (<id>.py oder aufgabe_1.py).
 async function readCurrentCode(praktikum: string): Promise<string | undefined> {
   const editor = vscode.window.activeTextEditor;
   if (editor && editor.document.fileName.endsWith(".py")) {
     return editor.document.getText();
   }
   if (state.taskDir) {
-    try {
-      return await fs.readFile(
-        path.join(state.taskDir, `${praktikum}.py`),
-        "utf8"
-      );
-    } catch {
-      return undefined;
+    const mainFile = await findMainFile(state.taskDir, praktikum);
+    if (mainFile) {
+      try {
+        return await fs.readFile(mainFile, "utf8");
+      } catch {
+        return undefined;
+      }
     }
   }
   return undefined;
