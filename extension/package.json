@@ -1,0 +1,88 @@
+{
+  "name": "notebook-grader",
+  "displayName": "Notebook Grader",
+  "description": "Praktikum laden, pytest lokal ausführen, Ergebnis ans FH-Backend abgeben.",
+  "version": "0.1.0",
+  "publisher": "fh-muenster",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": [
+    "Education"
+  ],
+  "main": "./out/extension.js",
+  "activationEvents": [],
+  "contributes": {
+    "commands": [
+      {
+        "command": "notebookGrader.loadPraktikum",
+        "title": "Notebook Grader: Praktikum laden"
+      },
+      {
+        "command": "notebookGrader.runTests",
+        "title": "Notebook Grader: Tests ausführen"
+      },
+      {
+        "command": "notebookGrader.submit",
+        "title": "Notebook Grader: Ergebnis abgeben"
+      },
+      {
+        "command": "notebookGrader.hint",
+        "title": "Notebook Grader: KI-Tipp holen"
+      }
+    ],
+    "configuration": {
+      "title": "Notebook Grader",
+      "properties": {
+        "notebookGrader.backendUrl": {
+          "type": "string",
+          "default": "",
+          "description": "Basis-URL des FH-Backends, z. B. https://grader.fh-muenster.de"
+        },
+        "notebookGrader.courseToken": {
+          "type": "string",
+          "default": "",
+          "description": "Kurs-Token für das Backend. Wird als Bearer-Token mitgeschickt und nie geloggt."
+        },
+        "notebookGrader.tasksSource": {
+          "type": "string",
+          "default": "",
+          "description": "Ordner mit den Praktikums-Aufgaben (ein Unterordner pro Aufgabe). Leer = tasks/ im Workspace."
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "notebookGrader",
+          "title": "Notebook Grader",
+          "icon": "$(mortar-board)"
+        }
+      ]
+    },
+    "views": {
+      "notebookGrader": [
+        {
+          "type": "webview",
+          "id": "notebookGrader.sidebar",
+          "name": "Punktestand"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src",
+    "test": "npm run compile && node --test \"out/test/*.test.js\""
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "@types/vscode": "^1.90.0",
+    "eslint": "^9.9.0",
+    "typescript": "^5.5.0",
+    "typescript-eslint": "^8.0.0"
+  }
+}
