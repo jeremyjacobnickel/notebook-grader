@@ -23,9 +23,10 @@ acting.
   reason for the choice.
 - **Match the maintainer's skill level.** `@dataclass` and `@property`
   are fine. Custom decorators, metaclasses, descriptors, generator
-  protocols, and async are not. For the TypeScript extension: stay
-  close to the official VS Code extension samples, no clever
-  abstractions.
+  protocols, and async are not. This applies to the Python code
+  (`grader/`, `backend/`, `tasks/`). The TypeScript extension
+  (`extension/`) follows the official VS Code extension samples —
+  kept small and conventional, no clever abstractions.
 - **No dead code, no speculative abstractions.** Build what the current
   task needs.
 
@@ -47,19 +48,20 @@ acting.
 
 ## Files that must never be committed
 
-- `.env` (use `.env.example` as the template)
-- Real student notebooks — they contain personal data and live outside
-  the repo. Only `examples/sample_submission.ipynb` is committed.
+- `.env` (use `.env.example` as the template) — it holds the course and
+  FH AI API tokens.
+- Real student submissions — they contain personal data and live outside
+  the repo.
 - **The professor's Lösung notebooks** — students could find them in
   the repo. Only the Aufgaben version (empty code cells) may be
-  committed as a fixture.
+  committed as a fixture (`tests/fixtures/1_Praktikum.ipynb`).
 - The real `notebookGrader.courseToken` value — never in code, logs,
   fixtures, or docs.
 
 ## Current state (August 2026)
 
-- **Direction change:** VS-Code-Extension instead of the earlier
-  LTI/ILIAS web-tool plan (see DECISIONS.md entry 2026-08-03).
+- **Direction:** VS-Code-Extension + FastAPI backend, no LTI/ILIAS
+  (see DECISIONS.md 2026-06-29 and 2026-08-03).
 - `extension/` v1 is built: three commands (`loadPraktikum`, `runTests`,
   `submit`) plus `hint`, a sidebar (WebviewView) and a status bar item.
   Pure score/JUnit logic is unit-tested (`npm test`, node:test).
@@ -75,16 +77,22 @@ acting.
   variables (text answers, graphics) are skipped and are NOT graded by
   the extension (see DECISIONS.md 2026-08-03). `notebook_reader.py`
   does the parsing underneath.
+- `backend/` and `tasks/` are skeletons (README placeholders).
+- History note: an earlier parallel extension implementation from the
+  `feat/vscode-extension` branch was superseded by this one when the
+  branches were merged (2026-08-03); the surviving implementation is
+  the one wired to the task_exporter layout.
 
 ## The plan: VS-Code-Extension + FH backend
 
 1. **Extension (client) — done in v1.** Students load a task, run
    pytest locally (pass = ≥ 80 % of tests), see the score inline, and
    submit the result. AI hints come from the backend.
-2. **FH backend — next.** Small service (likely FastAPI) implementing
-   the two contracts the extension already uses:
-   `POST /submit` (store result per course token) and
-   `POST /hint` (LLM call that returns a Socratic hint).
+2. **FH backend — next.** FastAPI service implementing the two
+   contracts the extension already uses: `POST /submit` (store result
+   per course token) and `POST /hint` (proxy to the FH AI API that
+   returns a Socratic hint; the Socratic framing is enforced
+   server-side).
 3. **Rollout.** Package the extension (`vsce package` → `.vsix`),
    distribute tasks (for now a local `tasks/` folder; the seam in
    `loadPraktikum` allows a backend download later), hand out course
@@ -99,3 +107,12 @@ acting.
   the student's own machine.)
 - **courseToken** is a shared secret per course. Never log it; treat
   leaked tokens as replaceable.
+
+## Earlier direction (preserved, not current)
+
+The project was previously planned as a **server-side grading pipeline
+launched by ILIAS over LTI**. That idea is **not deleted** — it is kept
+as a documented fallback in `docs/alternatives/ilias-lti-webserver.md`,
+with a full code snapshot on the branch `archive/ilias-lti-webserver`.
+Do not treat it as the active plan; consult it only if the editor-based
+approach is abandoned.

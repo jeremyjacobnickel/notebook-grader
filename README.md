@@ -1,20 +1,110 @@
-# Notebook Grader
+# Lab Submission Tool (VS Code Extension)
 
-Automated grading for the Python intro course at FH Münster.
-Students solve small Python tasks in VS Code; a VS-Code-Extension
-runs the task's pytest suite locally, shows pass/fail instantly,
-offers AI-powered Socratic hints, and submits the result to an
-FH backend. Passing means at least 80 % of the points.
+A VS Code extension plus a minimal FastAPI backend for Python lab
+("Praktikum") submissions in the *Grundlagen der Programmierung* module
+at FH Münster. It replaces the previous manual upload: students load a
+task into their workspace, solve it locally in VS Code, run the tests
+with one button to see their score inline (green/red), optionally ask
+the AI tutor for a Socratic hint, and submit the result to an FH
+backend.
+
+> The repository is still named `notebook-grader` for historical
+> reasons. See `DECISIONS.md` for the pivots.
 
 ## Skill level of the maintainer
 
-I am learning Python. I know variables, loops, and
-functions. I use simple decorators from the standard
-library like `@dataclass` and `@property`, but I do
-not write my own decorators, and I do not know
-metaclasses, descriptors, or async/await. Prefer
-simple, explicit code over clever abstractions. Add
-comments where logic is non-obvious.
+I am learning Python. I know variables, loops, and functions. I use
+simple decorators from the standard library like `@dataclass` and
+`@property`, but I do not write my own decorators, and I do not know
+metaclasses, descriptors, or async/await. Prefer simple, explicit code
+over clever abstractions. Add comments where logic is non-obvious.
+
+The extension is written in TypeScript, which is new to me. Keep it
+small and conventional — follow the official VS Code extension examples
+rather than clever patterns.
+
+## Grading model
+
+Pass / fail only. **Passed = at least 80 % of the tests.** There is no
+exam and no grade pressure — the focus is on learning, not on cheating
+prevention. The local test result is what counts.
+
+## Student workflow
+
+1. Load a Praktikum into the workspace via the extension.
+2. Solve the tasks locally in VS Code (one `aufgabe_<n>.py` per task).
+3. Press **Run tests** → the score is shown inline, green/red.
+4. Optionally press **Hint** → a Socratic AI tip (guiding questions, not
+   a finished solution).
+5. Press **Submit** → the result is sent to the FH backend.
+
+## Components
+
+### Extension (client) — `extension/`
+
+TypeScript, VS Code API. Three commands — load Praktikum, run tests,
+submit — plus a sidebar panel with the current score and a hint button.
+The extension runs `python -m pytest` locally on the student's machine
+and talks to the backend with the course token. Build and run
+instructions: `extension/README.md`.
+
+### Task tooling — `grader/`
+
+The professor maintains each praktikum as a **pair of Jupyter
+notebooks**: an Aufgaben version (markdown per task, empty code cells)
+and a Lösung version (same cells, filled in). The Lösung notebooks live
+outside the repo.
+
+`grader/notebook_reader.py` parses that format;
+`grader/task_exporter.py` turns a pair into the folder the students
+receive:
+
+```
+tasks/<praktikum>/
+  aufgabe_<n>.py       — stub the student edits (None placeholders)
+  test_aufgabe_<n>.py  — generated pytest checks (floats via pytest.approx)
+```
+
+Run it with
+`python -m grader.task_exporter <aufgaben.ipynb> <loesung.ipynb> tasks/<id>`.
+Tasks without checkable variables (text answers, graphics such as the
+"Vibe Coding" drawing) are skipped — they are graded outside the
+extension. Structural `ast` checks and loose plot grading are possible
+future work, as is Hypothesis for function-style tasks (see
+DECISIONS.md).
+
+### Backend — `backend/` (planned, skeleton)
+
+FastAPI, minimal. Two endpoints:
+
+- `POST /submit` — logs the pass/fail result per student (CSV/SQLite to
+  start).
+- `POST /hint` — proxy to the existing FH AI API, with a token check,
+  rate limiting, and a system prompt that pins the AI to Socratic help
+  (guiding questions and concepts, never finished solutions). The
+  Socratic framing is enforced server-side, not trusted to the client.
+
+## AI tutor role
+
+A tutor that helps while programming — targeted hints based on the code,
+the task description, and the traceback, but never complete solutions.
+The Socratic behaviour is enforced in the `/hint` system prompt on the
+server, not in the client.
+
+## Authentication
+
+A simple token, issued at course enrolment, is sent with every backend
+request and checked server-side. No SSO/OAuth. The token lives in `.env`
+(see `.env.example`) and is never committed.
+
+## Deliberately out of scope
+
+- **No server-side re-execution / hidden tests** — the local test result
+  counts (acceptable for lab submissions).
+- **No SSO/OAuth** — a simple enrolment token is enough.
+- **No plagiarism check** (maybe later).
+- **No server-side Docker sandbox** — code runs locally on the student's
+  own machine, so there is no untrusted code on our servers.
 
 ## Project conventions
 
@@ -22,38 +112,36 @@ comments where logic is non-obvious.
 - One module = one clear responsibility.
 - Functions short enough to fit on one screen.
 - Prefer the standard library when possible.
-- No new dependency without a written reason in DECISIONS.md.
+- No new dependency without a written reason in `DECISIONS.md`.
 
-## Components
+## Repository layout
 
-- **`extension/`** — the VS-Code-Extension (TypeScript). Loads a
-  praktikum into the workspace, runs `python -m pytest` locally,
-  shows the score in a sidebar and the status bar, fetches AI hints,
-  and submits pass/fail to the backend. Build and usage instructions:
-  `extension/README.md`.
-- **FH backend** (not in this repo yet) — a small service with two
-  endpoints, `POST /submit` (collect results per course token) and
-  `POST /hint` (LLM-generated Socratic hint). The HTTP contracts the
-  extension is built against are documented in `extension/README.md`.
-- **`grader/`, `tests/`** — Python tooling around the professor's
-  notebook format. Each praktikum is maintained as a pair of Jupyter
-  notebooks (Aufgaben version with empty code cells + Lösung version).
-  `notebook_reader.py` parses that format; `task_exporter.py` turns a
-  pair into a `tasks/<id>/` folder with one stub + one pytest file per
-  task (`python -m grader.task_exporter <aufgaben> <loesung> <ziel>`).
-  Text-answer tasks are skipped — they are graded outside the
-  extension.
+- `extension/` — VS Code extension (TypeScript) — implemented; see
+  `extension/README.md`
+- `grader/`   — notebook parsing + task exporter (Python) — implemented
+- `tests/`    — pytest tests for `grader/`
+- `backend/`  — FastAPI service (`/submit`, `/hint`) — *skeleton, planned*
+- `tasks/`    — exported Praktikum folders for students — *generated, planned*
 
 ## Running tests
 
-- Extension: `cd extension && npm test` (unit tests for the pure
-  score/JUnit logic) and `npm run lint`.
-- Python (legacy pipeline): `pytest tests/`
+- Python: `pytest tests/`
+- Extension: `cd extension && npm run lint && npm test`
 
 ## Important
 
 - Never commit the `.env` file. Use `.env.example` as the template.
-- Real student notebooks contain personal data — they live outside
-  the repo. Only `examples/sample_submission.ipynb` is committed.
+- Real student submissions contain personal data — they live outside
+  the repo.
+- **Never commit the professor's Lösung notebooks** — students could
+  find them. Only the Aufgaben version is committed as a test fixture.
 - The `notebookGrader.courseToken` setting is a secret: the extension
   sends it only as an Authorization header and never logs it.
+
+## Alternative / earlier direction
+
+Before this, the project was planned as a server-side grading pipeline
+that ILIAS launches over LTI. That idea is **not deleted** — it is kept
+as a documented fallback in
+[`docs/alternatives/ilias-lti-webserver.md`](docs/alternatives/ilias-lti-webserver.md),
+with a full code snapshot on the branch `archive/ilias-lti-webserver`.
