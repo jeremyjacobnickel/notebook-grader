@@ -5,6 +5,26 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
+## 2026-08-03 — `grader/` bleibt: Basis für den Notebook-Konverter
+
+**Kontext:** Nach dem Wechsel zur VS-Code-Extension war offen, ob die
+alte Notebook-Pipeline (`grader/notebook_reader.py`) entfernt wird
+("no dead code"). Jetzt ist geklärt: Der Prof pflegt die Praktika
+weiterhin als Jupyter-Notebook-Paar — eine **Aufgaben-Version**
+(Markdown-Aufgaben, leere Code-Zellen) und eine **Lösungs-Version**
+(gleiche Zellen, ausgefüllt, mit Ausgaben).
+
+**Entscheidung:** `notebook_reader.py` bleibt und wird die Basis des
+Konverters Notebook → `tasks/<id>/` (Aufgaben-Stub + pytest-Tests).
+
+**Begründung:** Der Reader parst genau dieses Format bereits
+(verifiziert gegen das echte 1. Praktikum, Aufgaben- und
+Lösungs-Version: je 7 Aufgaben sauber erkannt) und ist getestet.
+Lösungs-Notebooks werden wie echte Abgaben NIE committet — sonst
+könnten Studierende sie im Repo finden.
+
+---
+
 ## 2026-08-03 — VS-Code-Extension statt LTI/ILIAS-Einbindung
 
 **Kontext:** Ursprünglich war geplant, den Grader als Web-Tool über LTI

@@ -35,10 +35,11 @@ comments where logic is non-obvious.
   endpoints, `POST /submit` (collect results per course token) and
   `POST /hint` (LLM-generated Socratic hint). The HTTP contracts the
   extension is built against are documented in `extension/README.md`.
-- **`grader/`, `tests/`** — the earlier local notebook-grading
-  pipeline (Python). On hold since the switch to the extension
-  approach (see DECISIONS.md 2026-08-03); keep-or-remove decision is
-  tracked in ROADMAP.md.
+- **`grader/`, `tests/`** — Python helpers around the professor's
+  notebook format. Each praktikum is maintained as a pair of Jupyter
+  notebooks (Aufgaben version with empty code cells + Lösung version).
+  `notebook_reader.py` parses that format and is the basis for the
+  planned notebook → `tasks/` converter (see ROADMAP.md).
 
 ## Running tests
 

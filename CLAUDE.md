@@ -50,6 +50,9 @@ acting.
 - `.env` (use `.env.example` as the template)
 - Real student notebooks — they contain personal data and live outside
   the repo. Only `examples/sample_submission.ipynb` is committed.
+- **The professor's Lösung notebooks** — students could find them in
+  the repo. Only the Aufgaben version (empty code cells) may be
+  committed as a fixture.
 - The real `notebookGrader.courseToken` value — never in code, logs,
   fixtures, or docs.
 
@@ -61,9 +64,14 @@ acting.
   `submit`) plus `hint`, a sidebar (WebviewView) and a status bar item.
   Pure score/JUnit logic is unit-tested (`npm test`, node:test).
   Manual testing in the Extension Development Host is still open.
-- `grader/notebook_reader.py` and `tests/` are the earlier notebook
-  pipeline — currently **on hold**; keep-or-remove is an open decision
-  in ROADMAP.md.
+- **Task source format is fixed** (see DECISIONS.md 2026-08-03): the
+  professor maintains each praktikum as a pair of Jupyter notebooks —
+  an Aufgaben version (markdown per task: `## N. Aufgabe: Titel`,
+  empty code cells) and a Lösung version (same cells, filled in).
+  `tests/fixtures/1_Praktikum.ipynb` is the real Aufgaben version.
+- `grader/notebook_reader.py` **stays**: it already parses exactly this
+  format (verified against both versions) and becomes the basis of the
+  notebook → `tasks/` converter (see ROADMAP.md).
 
 ## The plan: VS-Code-Extension + FH backend
 
