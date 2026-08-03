@@ -22,7 +22,7 @@ def test_finds_all_seven_tasks(notebook):
 def test_extracts_task_titles(notebook):
     titles = {t.number: t.title for t in notebook.tasks}
     assert titles[1] == "Arithmetische Operationen"
-    assert titles[4] == "Modulo-Operator"
+    assert titles[4] == "Holzzuschnitt — Modulo-Operator"
     assert titles[6] == "Schwenkkran"
 
 
