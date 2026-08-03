@@ -23,7 +23,9 @@ acting.
   reason for the choice.
 - **Match the maintainer's skill level.** `@dataclass` and `@property`
   are fine. Custom decorators, metaclasses, descriptors, generator
-  protocols, and async are not.
+  protocols, and async are not. For the TypeScript extension: stay
+  close to the official VS Code extension samples, no clever
+  abstractions.
 - **No dead code, no speculative abstractions.** Build what the current
   task needs.
 
@@ -40,53 +42,49 @@ acting.
 - Work on a feature branch, never directly on `main`.
 - Commit `frame-only` changes (docs, configs, fixtures) separately from
   code changes when both fit in one PR.
-- Run `pytest tests/` before opening a PR.
+- Before opening a PR: `pytest tests/` for Python changes,
+  `npm run lint && npm test` in `extension/` for extension changes.
 
 ## Files that must never be committed
 
 - `.env` (use `.env.example` as the template)
 - Real student notebooks — they contain personal data and live outside
   the repo. Only `examples/sample_submission.ipynb` is committed.
+- The real `notebookGrader.courseToken` value — never in code, logs,
+  fixtures, or docs.
 
-## Current state (June 2026)
+## Current state (August 2026)
 
-- Stage 1 has started. `grader/notebook_reader.py` (reads an `.ipynb`
-  into cells) exists and has tests under `tests/`.
-- Still to build for the local pipeline: `code_runner`, `code_analyzer`,
-  `ai_grader`, `report_builder`, `main` (see the README module layout).
+- **Direction change:** VS-Code-Extension instead of the earlier
+  LTI/ILIAS web-tool plan (see DECISIONS.md entry 2026-08-03).
+- `extension/` v1 is built: three commands (`loadPraktikum`, `runTests`,
+  `submit`) plus `hint`, a sidebar (WebviewView) and a status bar item.
+  Pure score/JUnit logic is unit-tested (`npm test`, node:test).
+  Manual testing in the Extension Development Host is still open.
+- `grader/notebook_reader.py` and `tests/` are the earlier notebook
+  pipeline — currently **on hold**; keep-or-remove is an open decision
+  in ROADMAP.md.
 
-## The plan: ILIAS / LTI integration in 3 stages
+## The plan: VS-Code-Extension + FH backend
 
-The end goal is to embed the grader into ILIAS via LTI so a student gets
-immediate feedback right after submitting, with a grade flowing back into
-the ILIAS gradebook. Build it in this order — each stage builds on the last
-(the README has the longer version):
+1. **Extension (client) — done in v1.** Students load a task, run
+   pytest locally (pass = ≥ 80 % of tests), see the score inline, and
+   submit the result. AI hints come from the backend.
+2. **FH backend — next.** Small service (likely FastAPI) implementing
+   the two contracts the extension already uses:
+   `POST /submit` (store result per course token) and
+   `POST /hint` (LLM call that returns a Socratic hint).
+3. **Rollout.** Package the extension (`vsce package` → `.vsix`),
+   distribute tasks (for now a local `tasks/` folder; the seam in
+   `loadPraktikum` allows a backend download later), hand out course
+   tokens.
 
-1. **Run locally first.** Finish the core CLI pipeline so it works on a
-   laptop, no internet: notebook in → pytest/ruff/LLM → feedback out.
-   This is the biggest piece and the current focus.
-2. **Set up a web server at the FH.** Wrap the program in a small Flask web
-   app (LTI launch page, upload page, feedback page), running on an
-   FH Münster server under a fixed HTTPS address. Add sandboxing here.
-3. **Connect to ILIAS via LTI.** The ILIAS admin registers the server as an
-   LTI tool; exchange keys once. Then the student clicks in ILIAS, lands
-   logged-in in the tool, and the grade can be passed back.
+## Known critical risks
 
-Stages 2 and 3 cannot be done alone — they need the FH IT / ILIAS admin.
-Talk to them early (data protection / DSGVO, and whether ILIAS supports
-LTI 1.1 or 1.3).
-
-## Decisions already made
-
-- **Hosting:** on FH Münster servers (student data stays in-house).
-- **Feedback:** immediate — automatic formative feedback (tests, ruff, LLM
-  hints) shown right after upload, with the grade passed back to ILIAS.
-
-## Known critical risks (don't forget when building stages 2–3)
-
-- **Sandboxing:** `code_runner` executes untrusted student code. In a
-  web-facing setup it must run isolated (container, time/memory limits,
-  no network).
-- **DSGVO / data protection:** student notebooks are personal data. Sending
-  code to an external LLM needs a legal basis / processing agreement (AVV),
-  or the LLM must stay inside FH infrastructure.
+- **DSGVO / data protection:** `/hint` sends student code to the
+  backend and from there to an LLM. Needs a legal basis / processing
+  agreement (AVV), or the LLM must stay inside FH infrastructure.
+  (Server-side sandboxing is no longer needed — student code runs on
+  the student's own machine.)
+- **courseToken** is a shared secret per course. Never log it; treat
+  leaked tokens as replaceable.

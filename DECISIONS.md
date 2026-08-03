@@ -5,6 +5,30 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
+## 2026-08-03 — VS-Code-Extension statt LTI/ILIAS-Einbindung
+
+**Kontext:** Ursprünglich war geplant, den Grader als Web-Tool über LTI
+in ILIAS einzubinden (3-Stufen-Plan: lokal → FH-Webserver → LTI).
+
+**Alternativen:**
+- LTI-Web-Tool: Flask-Server an der FH, Registrierung durch den
+  ILIAS-Admin, Server-Sandbox für Studierenden-Code, DSGVO-Klärung für
+  Notebook-Uploads.
+- VS-Code-Extension: Studierende arbeiten lokal in VS Code, die Tests
+  laufen auf dem eigenen Rechner; nur das Ergebnis (bestanden ab 80 %)
+  und — für KI-Tipps — der Code gehen an ein kleines FH-Backend.
+
+**Entscheidung:** VS-Code-Extension. Der Client liegt in `extension/`,
+das FH-Backend (`POST /submit`, `POST /hint`) folgt separat.
+
+**Begründung:** Einfach zu installieren und zu verteilen, keine
+Server-Sandbox nötig (der Code läuft beim Studierenden), kein
+LTI-/ILIAS-Abstimmungsprozess. Trade-off: keine automatische Note im
+ILIAS-Gradebook — das Backend sammelt die Bestanden-Status über ein
+Kurs-Token.
+
+---
+
 ## 2026-06-25 — `pytest` als Test-Runner (Dev-Dependency)
 
 **Kontext:** Erster Test (`tests/test_notebook_reader.py`) braucht ein Framework.
