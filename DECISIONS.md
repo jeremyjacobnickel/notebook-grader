@@ -5,6 +5,32 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
+## 2026-08-03 — Konverter: eine Datei pro Aufgabe, nur Variablen-Checks
+
+**Kontext:** `grader/task_exporter.py` erzeugt aus dem Notebook-Paar die
+`tasks/`-Ordner für die Extension. In den Notebooks verwenden mehrere
+Aufgaben dieselben Variablennamen (`a`, `b`, `c` …) — in einer
+gemeinsamen Datei würden sie sich überschreiben.
+
+**Entscheidung (Maintainer):**
+- **Eine Datei pro Aufgabe:** `aufgabe_<n>.py` + `test_aufgabe_<n>.py`.
+- Die Stubs enthalten **None-Platzhalter** für die erwarteten Variablen.
+  So schlägt der Import in den Tests nie fehl und eine ungelöste
+  Aufgabe stoppt nicht den ganzen pytest-Lauf (die Extension ruft
+  pytest zusätzlich mit `--continue-on-collection-errors` auf).
+- Getestet werden nur **einfache Variablenwerte** (Zahlen, Strings,
+  bool), die die Lösung der jeweiligen Aufgabe neu anlegt oder ändert.
+  Floats mit `pytest.approx`.
+- **Aufgaben mit Textantworten statt Code werden nicht über die
+  Extension geprüft** — sie erzeugen keine Dateien und zählen nicht in
+  die 80-%-Grenze. Die Kontrolle passiert anderswo (z. B. Leukipp).
+
+**Begründung:** Einfachstes Layout, das die Variablen-Kollisionen löst;
+der Studierenden-Fortschritt bleibt als Prozentwert über alle
+generierten Tests korrekt messbar.
+
+---
+
 ## 2026-08-03 — `grader/` bleibt: Basis für den Notebook-Konverter
 
 **Kontext:** Nach dem Wechsel zur VS-Code-Extension war offen, ob die

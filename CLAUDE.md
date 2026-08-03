@@ -69,9 +69,12 @@ acting.
   an Aufgaben version (markdown per task: `## N. Aufgabe: Titel`,
   empty code cells) and a Lösung version (same cells, filled in).
   `tests/fixtures/1_Praktikum.ipynb` is the real Aufgaben version.
-- `grader/notebook_reader.py` **stays**: it already parses exactly this
-  format (verified against both versions) and becomes the basis of the
-  notebook → `tasks/` converter (see ROADMAP.md).
+- `grader/task_exporter.py` **converts** a notebook pair into a
+  `tasks/<id>/` folder: one `aufgabe_<n>.py` stub (None placeholders)
+  plus one `test_aufgabe_<n>.py` per task; tasks without checkable
+  variables (text answers, graphics) are skipped and are NOT graded by
+  the extension (see DECISIONS.md 2026-08-03). `notebook_reader.py`
+  does the parsing underneath.
 
 ## The plan: VS-Code-Extension + FH backend
 

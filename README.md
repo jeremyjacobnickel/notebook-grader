@@ -35,11 +35,14 @@ comments where logic is non-obvious.
   endpoints, `POST /submit` (collect results per course token) and
   `POST /hint` (LLM-generated Socratic hint). The HTTP contracts the
   extension is built against are documented in `extension/README.md`.
-- **`grader/`, `tests/`** — Python helpers around the professor's
+- **`grader/`, `tests/`** — Python tooling around the professor's
   notebook format. Each praktikum is maintained as a pair of Jupyter
   notebooks (Aufgaben version with empty code cells + Lösung version).
-  `notebook_reader.py` parses that format and is the basis for the
-  planned notebook → `tasks/` converter (see ROADMAP.md).
+  `notebook_reader.py` parses that format; `task_exporter.py` turns a
+  pair into a `tasks/<id>/` folder with one stub + one pytest file per
+  task (`python -m grader.task_exporter <aufgaben> <loesung> <ziel>`).
+  Text-answer tasks are skipped — they are graded outside the
+  extension.
 
 ## Running tests
 

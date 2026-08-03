@@ -19,6 +19,14 @@ Stand: 2026-08-03.
   - Sidebar (Punktestand + Tipp-Button) und StatusBar (grün/rot).
   - 9 Unit-Tests (node:test), ESLint, tsc strict; Beispiel-Aufgabe
     unter `extension/fixtures/tasks/beispiel/`.
+- **Konverter Notebook → `tasks/`** (`grader/task_exporter.py`):
+  liest das Notebook-Paar des Profs, führt die Lösungen aus und erzeugt
+  je Aufgabe `aufgabe_<n>.py` (Stub mit None-Platzhaltern) +
+  `test_aufgabe_<n>.py` (Erwartungswerte, Floats mit `pytest.approx`).
+  Textantwort-/Grafik-Aufgaben werden übersprungen (siehe DECISIONS.md).
+  Verifiziert am echten 1. Praktikum: 6 von 7 Aufgaben exportiert,
+  nur Aufgabe 4 gelöst → 4/37 Tests (10,8 %), Musterlösung überall →
+  37/37 (100 %, bestanden).
 
 ## Als Nächstes
 
@@ -29,20 +37,10 @@ Stand: 2026-08-03.
    `POST /submit` speichert Ergebnis je Kurs-Token,
    `POST /hint` ruft das LLM für einen sokratischen Tipp.
    Vorher DSGVO klären (AVV oder FH-internes LLM).
-3. **Konverter Notebook → `tasks/` bauen** (z. B. `grader/task_exporter.py`):
-   Der Prof pflegt je Praktikum ein Notebook-Paar (Aufgaben-Version mit
-   leeren Code-Zellen + Lösungs-Version, siehe DECISIONS.md 2026-08-03).
-   `notebook_reader.py` parst beides bereits. Der Konverter erzeugt daraus
-   den Aufgaben-Stub und pytest-Tests. Offene Design-Fragen:
-   - **Variablen-Wiederverwendung:** `a`, `b`, `c` kommen in mehreren
-     Aufgaben vor — in einer flachen `.py` überschreiben sie sich.
-     Wahrscheinlich: eine Datei pro Aufgabe (`aufgabe_4.py` +
-     `test_aufgabe_4.py`) statt einer Datei pro Praktikum.
-   - **Erwartungswerte:** kommen aus dem Ausführen der Lösungs-Zellen
-     (braucht numpy); Float-Vergleiche mit `pytest.approx`.
-   - **Nicht automatisch testbar:** Textantworten (Aufgabe 1c, 2d/Leukipp)
-     und Grafik-Aufgaben (Aufgabe 7, Vibe Coding) — wie zählen sie in
-     die 80-%-Grenze?
+3. **Echte Aufgaben exportieren:** Der Prof (oder Maintainer) führt den
+   Konverter für jedes Praktikum aus und legt die Ergebnisse in den
+   `tasks/`-Ordner, den die Studierenden bekommen. Auf dem Rechner
+   müssen die Pakete der Lösungen installiert sein (numpy, matplotlib).
 4. **Verteilung:** `vsce package` → `.vsix` an die Studierenden;
    Kurs-Token-Ausgabe organisieren.
 
