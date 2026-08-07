@@ -34,9 +34,9 @@ export async function runTests(
       () => runPytest(cwd)
     );
   } catch {
-    // spawn-Fehler: python selbst wurde nicht gefunden
+    // spawn-Fehler: weder `python` noch `python3` wurde gefunden
     void vscode.window.showErrorMessage(
-      "Notebook Grader: `python` wurde nicht gefunden. Bitte Python installieren und in PATH aufnehmen."
+      "Notebook Grader: Python wurde nicht gefunden (weder `python` noch `python3`). Bitte Python installieren."
     );
     return;
   }
@@ -55,6 +55,7 @@ export async function runTests(
   const counts = parseJunitXml(run.junitXml);
   const score = computeScore(counts.passed, counts.total);
   state.lastScore = score;
+  state.lastFailures = counts.failures;
   // Bei komplett grünem Lauf gibt es keinen Fehler zu erklären
   state.lastTraceback = run.exitCode === 0 ? "" : run.output;
 

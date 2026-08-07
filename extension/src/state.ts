@@ -3,11 +3,14 @@
 
 import * as path from "node:path";
 import type { ScoreResult } from "./grading/score";
+import type { FailedTest } from "./grading/junit";
 
 export const state = {
   praktikumId: undefined as string | undefined,
   taskDir: undefined as string | undefined,
   lastScore: undefined as ScoreResult | undefined,
+  // Welche Tests zuletzt fehlgeschlagen sind — für die Sidebar
+  lastFailures: [] as FailedTest[],
   // Letzte pytest-Fehlerausgabe — geht mit an /hint
   lastTraceback: "",
   lastHint: "",

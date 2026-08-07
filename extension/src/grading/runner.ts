@@ -18,14 +18,25 @@ export async function runPytest(cwd: string): Promise<PytestRun> {
   const tmpDir = await fs.mkdtemp(path.join(os.tmpdir(), "notebook-grader-"));
   const xmlPath = path.join(tmpDir, "results.xml");
   try {
-    const { output, exitCode } = await spawnPytest(cwd, xmlPath);
+    let result;
+    try {
+      result = await spawnPytest("python", cwd, xmlPath);
+    } catch (error) {
+      // Auf macOS heißt der Befehl oft nur `python3` — bei "nicht
+      // gefunden" (ENOENT) einmal damit nachprobieren.
+      if ((error as NodeJS.ErrnoException).code === "ENOENT") {
+        result = await spawnPytest("python3", cwd, xmlPath);
+      } else {
+        throw error;
+      }
+    }
     let junitXml: string | null = null;
     try {
       junitXml = await fs.readFile(xmlPath, "utf8");
     } catch {
       junitXml = null;
     }
-    return { junitXml, output, exitCode };
+    return { junitXml, output: result.output, exitCode: result.exitCode };
   } finally {
     // Temp-Ordner immer aufräumen
     await fs.rm(tmpDir, { recursive: true, force: true });
@@ -33,6 +44,7 @@ export async function runPytest(cwd: string): Promise<PytestRun> {
 }
 
 function spawnPytest(
+  command: string,
   cwd: string,
   xmlPath: string
 ): Promise<{ output: string; exitCode: number | null }> {
@@ -40,14 +52,14 @@ function spawnPytest(
     // --continue-on-collection-errors: eine Aufgaben-Datei mit Syntaxfehler
     // soll nicht den ganzen Testlauf der übrigen Aufgaben stoppen
     const child = cp.spawn(
-      "python",
+      command,
       ["-m", "pytest", "--continue-on-collection-errors", `--junitxml=${xmlPath}`],
       { cwd }
     );
     let output = "";
     child.stdout.on("data", (chunk) => (output += chunk));
     child.stderr.on("data", (chunk) => (output += chunk));
-    // "error" feuert z. B., wenn `python` nicht installiert ist
+    // "error" feuert z. B., wenn der Befehl nicht installiert ist
     child.on("error", reject);
     child.on("close", (code) => resolve({ output, exitCode: code }));
   });
