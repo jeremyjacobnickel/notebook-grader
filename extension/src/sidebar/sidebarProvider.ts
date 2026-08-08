@@ -127,10 +127,16 @@ function formatClassname(classname: string): string {
   return found ? `Aufgabe ${found[1]}` : classname;
 }
 
-// "test_n" -> "Variable n"; alles andere unverändert anzeigen
+// "test_echo_beispiel_2" -> "Funktion echo, Beispiel 2"
+// "test_n"               -> "Variable n"
+// alles andere unverändert anzeigen
 function formatTestName(name: string): string {
-  const found = name.match(/^test_(\w+)$/);
-  return found ? `Variable ${found[1]}` : name;
+  const example = name.match(/^test_(\w+)_beispiel_(\d+)$/);
+  if (example) {
+    return `Funktion ${example[1]}, Beispiel ${example[2]}`;
+  }
+  const variable = name.match(/^test_(\w+)$/);
+  return variable ? `Variable ${variable[1]}` : name;
 }
 
 function escapeHtml(text: string): string {
