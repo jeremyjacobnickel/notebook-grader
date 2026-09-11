@@ -5,6 +5,47 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
+## 2026-08-04 — Konverter prüft auch Funktions-Aufgaben
+
+**Kontext:** Das 5. Praktikum ist anders aufgebaut als das erste. Statt
+"Ergebnis in Variable speichern" verlangt es **Funktionen**
+(`factorial_iter`, `echo`, `insertion_sort` …). Der Konverter prüfte
+bisher nur einfache Variablenwerte und hätte hier fast nichts erzeugt.
+
+**Alternativen:**
+- Erwartungswerte von Hand pflegen — skaliert nicht über 5+ Praktika.
+- Testfälle selbst erfinden (zufällige Eingaben) — bräuchte Wissen über
+  die erlaubten Eingabebereiche und liefert keine Erwartungswerte.
+- **Beispielaufrufe aus der Musterlösung ernten:** Der Prof ruft seine
+  Funktionen in der Lösung ohnehin mit festen Werten auf
+  (`print(factorial_iter(4))`), um sie vorzuführen.
+
+**Entscheidung:** Der Konverter sammelt die Aufrufe aus dem Lösungscode,
+bei denen **alle Argumente feste Werte** sind, führt sie aus und schreibt
+das Ergebnis als Test fest. Zusätzlich wird der Vorspann des Notebooks
+(Code-Zellen vor der ersten Aufgabe, z. B. `import numpy as np`)
+ausgeführt und in jeden Stub übernommen.
+
+**Begründung:** Die Testfälle stammen damit vom Prof selbst und sind
+genau die, die er als aussagekräftig ansieht — ohne Zusatzaufwand.
+Aufrufe mit Variablen als Argument (`factorial_rec(number - 1)`,
+`det_laplace(A)`) lassen sich nicht nachstellen und fallen automatisch
+heraus; rekursive Aufrufe damit ebenfalls.
+
+**Grenze:** NumPy-Arrays werden weiterhin nicht geprüft (eine 5x5-Matrix
+lässt sich nicht sinnvoll als Literal in eine Testdatei schreiben).
+Beim 5. Praktikum betrifft das `A`, `A_00` und `A_12`; die daraus
+berechnete Determinante `det_A` wird geprüft und deckt `submatrix` und
+`det_laplace` indirekt mit ab. Ein späterer `np.allclose`-Vergleich
+bleibt möglich.
+
+**Folge:** Das Aufgaben-Notebook ist für den Export nicht mehr nötig
+(die Lösung enthält dieselben Überschriften). Es kann mit `--aufgaben`
+weiterhin zur Kontrolle angegeben werden. Neuer Aufruf:
+`python -m grader.task_exporter <loesung.ipynb> <ziel>`.
+
+---
+
 ## 2026-08-03 — Konverter: eine Datei pro Aufgabe, nur Variablen-Checks
 
 **Kontext:** `grader/task_exporter.py` erzeugt aus dem Notebook-Paar die

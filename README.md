@@ -50,14 +50,13 @@ instructions: `extension/README.md`.
 
 ### Task tooling — `grader/`
 
-The professor maintains each praktikum as a **pair of Jupyter
-notebooks**: an Aufgaben version (markdown per task, empty code cells)
-and a Lösung version (same cells, filled in). The Lösung notebooks live
-outside the repo.
+The professor maintains each praktikum as a **Lösung notebook** (markdown
+per task, code cells filled in), usually alongside an Aufgaben version
+with empty code cells. The Lösung notebooks live outside the repo.
 
 `grader/notebook_reader.py` parses that format;
-`grader/task_exporter.py` turns a pair into the folder the students
-receive:
+`grader/task_exporter.py` turns a Lösung notebook into the folder the
+students receive:
 
 ```
 tasks/<praktikum>/
@@ -66,11 +65,24 @@ tasks/<praktikum>/
 ```
 
 Run it with
-`python -m grader.task_exporter <aufgaben.ipynb> <loesung.ipynb> tasks/<id>`.
-Tasks without checkable variables (text answers, graphics such as the
-"Vibe Coding" drawing) are skipped — they are graded outside the
-extension. Structural `ast` checks and loose plot grading are possible
-future work, as is Hypothesis for function-style tasks (see
+`python -m grader.task_exporter <loesung.ipynb> tasks/<id>`
+(optionally `--aufgaben <aufgaben.ipynb>` to verify both notebooks list
+the same tasks).
+
+Two kinds of results are checked:
+
+- **Variables** holding a simple value (number, text, boolean, or a list
+  of those) that the task creates or changes — the style of Praktikum 1.
+- **Functions**: the example calls in the professor's own solution (e.g.
+  `print(factorial_iter(4))`) are executed and their results recorded as
+  test cases — the style of Praktikum 5. Calls whose arguments are
+  variables rather than fixed values cannot be replayed and are skipped,
+  which also excludes recursive calls automatically.
+
+Tasks with no checkable result (text answers, graphics such as the "Vibe
+Coding" drawing) are skipped — they are graded outside the extension.
+Checking NumPy arrays via `np.allclose`, structural `ast` checks, and
+loose plot grading are possible future work, as is Hypothesis (see
 DECISIONS.md).
 
 ### Backend — `backend/` (planned, skeleton)

@@ -71,12 +71,18 @@ acting.
   an Aufgaben version (markdown per task: `## N. Aufgabe: Titel`,
   empty code cells) and a Lösung version (same cells, filled in).
   `tests/fixtures/1_Praktikum.ipynb` is the real Aufgaben version.
-- `grader/task_exporter.py` **converts** a notebook pair into a
-  `tasks/<id>/` folder: one `aufgabe_<n>.py` stub (None placeholders)
-  plus one `test_aufgabe_<n>.py` per task; tasks without checkable
-  variables (text answers, graphics) are skipped and are NOT graded by
-  the extension (see DECISIONS.md 2026-08-03). `notebook_reader.py`
-  does the parsing underneath.
+- `grader/task_exporter.py` **converts** a Lösung notebook into a
+  `tasks/<id>/` folder: one `aufgabe_<n>.py` stub plus one
+  `test_aufgabe_<n>.py` per task. It checks both **variables** with a
+  simple value (Praktikum 1 style) and **functions**, using the example
+  calls in the solution itself as test cases (Praktikum 5 style).
+  Tasks with no checkable result (text answers, graphics) are skipped
+  and are NOT graded by the extension (see DECISIONS.md 2026-08-03).
+  `notebook_reader.py` does the parsing underneath, including the
+  preamble cells before the first task (e.g. `import numpy as np`).
+- `tasks/5_praktikum/` is the first exported praktikum (4 tasks,
+  17 tests). Exported folders are committed; the Lösung notebooks are
+  not.
 - `backend/` and `tasks/` are skeletons (README placeholders).
 - History note: an earlier parallel extension implementation from the
   `feat/vscode-extension` branch was superseded by this one when the

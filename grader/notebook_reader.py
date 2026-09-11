@@ -22,6 +22,13 @@ class Task:
 class Notebook:
     path: Path
     tasks: list[Task] = field(default_factory=list)
+    # Code-Zellen vor der ersten Aufgabe (z. B. "import numpy as np").
+    # Der Prof lässt sie vorab ausführen, sie gelten für alle Aufgaben.
+    preamble_cells: list[str] = field(default_factory=list)
+
+    @property
+    def preamble(self) -> str:
+        return "\n\n".join(self.preamble_cells)
 
     def task(self, number: int) -> Task | None:
         for task in self.tasks:
@@ -62,10 +69,15 @@ def read(path: Path) -> Notebook:
                 # (z. B. der Holzbalken-Text bei Aufgabe 4)
                 current.description += "\n\n" + source
 
-        elif cell_type == "code" and current is not None:
+        elif cell_type == "code":
             # Leere Zellen ignorieren — sonst sieht es so aus,
             # als hätte der Studierende abgegeben
-            if source.strip():
+            if not source.strip():
+                continue
+            if current is None:
+                # Noch keine Aufgabe begonnen: gehört zum Vorspann
+                notebook.preamble_cells.append(source)
+            else:
                 current.code_cells.append(source)
 
     if current is not None:
