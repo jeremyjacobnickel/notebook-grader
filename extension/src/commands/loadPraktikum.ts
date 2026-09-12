@@ -1,12 +1,14 @@
 // Command: Praktikum aus der Aufgaben-Quelle in den Workspace laden.
 
 import * as path from "path";
+import * as fs from "fs/promises";
 import * as vscode from "vscode";
 import { getConfig } from "../config";
 import { state } from "../state";
 import { copyTask, listTaskIds } from "../taskSource";
 
 export async function loadPraktikum(): Promise<void> {
+  if (state.busy) { return; }
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   if (!workspaceFolder) {
     vscode.window.showErrorMessage(
@@ -50,7 +52,9 @@ export async function loadPraktikum(): Promise<void> {
 
   const targetDir = path.join(workspaceRoot, id);
   try {
-    await copyTask(sourceDir, id, targetDir);
+    const exists = await fs.stat(targetDir).then(() => true, () => false);
+    // Vorhandene Bearbeitungen nur wieder öffnen, niemals mit dem Starter ersetzen.
+    if (!exists) { await copyTask(sourceDir, id, targetDir); }
   } catch (error) {
     vscode.window.showErrorMessage(
       `Das Praktikum konnte nicht kopiert werden: ${(error as Error).message}`
@@ -63,6 +67,7 @@ export async function loadPraktikum(): Promise<void> {
   state.taskDir = targetDir;
   state.lastResult = undefined;
   state.lastTraceback = "";
+  state.lastSource = undefined;
 
   const mainFile = vscode.Uri.file(path.join(targetDir, `${id}.py`));
   try {

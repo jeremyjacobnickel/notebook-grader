@@ -23,6 +23,7 @@ export async function copyTask(
 ): Promise<void> {
   await fs.cp(path.join(sourceDir, id), targetDir, {
     recursive: true,
-    force: true,
+    force: false,
+    errorOnExist: true,
   });
 }

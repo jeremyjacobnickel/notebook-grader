@@ -14,6 +14,8 @@ export interface HintPayload {
   praktikum: string;
   code: string;
   traceback: string;
+  task?: string;
+  question?: string;
 }
 
 /** Schickt das Ergebnis an POST {backendUrl}/submit. */
@@ -55,6 +57,7 @@ async function postJson(
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
+      signal: AbortSignal.timeout(70000),
     });
   } catch {
     // fetch wirft z. B. bei DNS-Fehler oder abgelehnter Verbindung.
@@ -64,8 +67,9 @@ async function postJson(
     );
   }
   if (!response.ok) {
+    const error = await response.json().catch(() => ({})) as { detail?: unknown };
     throw new Error(
-      `Das Backend hat mit Status ${response.status} geantwortet.`
+      typeof error.detail === "string" ? error.detail : `Das Backend hat mit Status ${response.status} geantwortet.`
     );
   }
   try {

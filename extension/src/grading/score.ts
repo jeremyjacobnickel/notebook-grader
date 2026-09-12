@@ -22,6 +22,6 @@ export function computeScore(passed: number, total: number): ScoreResult {
     passed,
     total,
     percentage,
-    isPass: percentage >= PASS_THRESHOLD_PERCENT,
+    isPass: total > 0 && passed * 100 >= total * PASS_THRESHOLD_PERCENT,
   };
 }

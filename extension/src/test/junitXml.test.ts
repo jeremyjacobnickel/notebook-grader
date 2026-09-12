@@ -31,14 +31,14 @@ test("liest alle Testcases mit Namen", () => {
   );
 });
 
-test("failure und error zählen als nicht bestanden, skipped als bestanden", () => {
+test("failure, error und skipped zählen als nicht bestanden", () => {
   const cases = parseJunitXml(sampleXml);
   const byName = new Map(cases.map((c) => [c.name, c.passed]));
   assert.equal(byName.get("test_add"), true);
   assert.equal(byName.get("test_is_even"), true);
   assert.equal(byName.get("test_fails"), false);
   assert.equal(byName.get("test_errors"), false);
-  assert.equal(byName.get("test_skipped"), true);
+  assert.equal(byName.get("test_skipped"), false);
 });
 
 test("leeres oder testloses XML ergibt eine leere Liste", () => {

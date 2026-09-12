@@ -11,6 +11,8 @@ export interface SessionState {
   lastResult: ScoreResult | undefined;
   /** pytest-Ausgabe des letzten fehlgeschlagenen Laufs (für den Tipp). */
   lastTraceback: string;
+  lastSource: string | undefined;
+  busy: boolean;
 }
 
 export const state: SessionState = {
@@ -18,4 +20,6 @@ export const state: SessionState = {
   taskDir: undefined,
   lastResult: undefined,
   lastTraceback: "",
+  lastSource: undefined,
+  busy: false,
 };

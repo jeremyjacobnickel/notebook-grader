@@ -1,78 +1,37 @@
-// Command: sokratischen KI-Tipp vom Backend holen (Button in der Sidebar).
-
-import * as fs from "fs/promises";
-import * as path from "path";
 import * as vscode from "vscode";
 import { postHint } from "../backend/client";
 import { getConfig } from "../config";
+import { activateTask, currentCode, taskDirectory } from "../currentTask";
 import { ScoreViewProvider } from "../sidebar/scoreViewProvider";
 import { state } from "../state";
 
+let pending = false;
 export async function hint(sidebar: ScoreViewProvider): Promise<void> {
-  if (!state.praktikumId) {
-    vscode.window.showErrorMessage(
-      "Kein Praktikum aktiv. Lade zuerst ein Praktikum und führe die Tests aus."
-    );
-    return;
-  }
+  if (pending || state.busy) { return; }
+  const folder = taskDirectory();
+  if (!folder) { vscode.window.showErrorMessage("Bitte zuerst ein Praktikum laden."); return; }
+  activateTask(folder);
   const { backendUrl, courseToken } = getConfig();
-  if (!backendUrl || !courseToken) {
-    vscode.window.showErrorMessage(
-      "Backend ist nicht konfiguriert. Bitte notebookGrader.backendUrl " +
-        "und notebookGrader.courseToken in den Einstellungen setzen."
-    );
-    return;
-  }
-
-  const code = await readCurrentCode();
-  if (code === undefined) {
-    vscode.window.showErrorMessage(
-      "Keine Python-Datei gefunden. Öffne deine Praktikums-Datei " +
-        "und versuche es erneut."
-    );
-    return;
-  }
-
-  let hintText: string;
+  if (!backendUrl || !courseToken) { vscode.window.showErrorMessage("Backend-URL und Kurs-Token fehlen in den Einstellungen."); return; }
+  pending = true;
   try {
-    hintText = await vscode.window.withProgress(
-      {
-        location: vscode.ProgressLocation.Window,
-        title: "Hole Tipp…",
-      },
-      () =>
-        postHint(backendUrl, courseToken, {
-          praktikum: state.praktikumId as string,
-          code,
-          traceback: state.lastTraceback,
-        })
-    );
-  } catch (error) {
-    vscode.window.showErrorMessage(
-      `Tipp holen fehlgeschlagen: ${(error as Error).message}`
-    );
-    return;
-  }
-
-  sidebar.showHint(hintText);
-}
-
-// Inhalt der aktiven .py-Datei; wenn keine offen ist, die
-// Hauptdatei <id>.py des geladenen Praktikums.
-async function readCurrentCode(): Promise<string | undefined> {
-  const activeFile = vscode.window.activeTextEditor?.document;
-  if (activeFile && activeFile.fileName.endsWith(".py")) {
-    return activeFile.getText();
-  }
-  if (state.taskDir && state.praktikumId) {
-    try {
-      return await fs.readFile(
-        path.join(state.taskDir, `${state.praktikumId}.py`),
-        "utf8"
-      );
-    } catch {
-      return undefined;
-    }
-  }
-  return undefined;
+    const task = await vscode.window.showQuickPick([
+      "1a – Fakultät iterativ", "1b – Fakultät rekursiv", "2a/b – Matrix und Elemente",
+      "2c – Untermatrix", "2d – Laplace-Determinante", "3a – Satzzeichen entfernen",
+      "3b – Wort-Echo", "3c – Satz-Echo", "4 – Insertion-Sort"
+    ], {placeHolder: "Zu welcher Teilaufgabe brauchst du einen Tipp?"});
+    if (!task) { return; }
+    const question = await vscode.window.showInputBox({prompt: "Deine Frage (optional)",
+      placeHolder: "Wo komme ich nicht weiter?", validateInput: value => value.length > 2000 ? "Bitte kürzer formulieren." : undefined});
+    if (question === undefined) { return; }
+    const code = await currentCode();
+    if (code.length > 40000) { throw new Error("Die Datei ist für einen Tipp zu groß (maximal 40.000 Zeichen)."); }
+    const text = await vscode.window.withProgress({location: vscode.ProgressLocation.Notification,
+      title: "FH-LiteLLM erstellt einen Tipp …"}, () => postHint(backendUrl, courseToken, {
+        praktikum: state.praktikumId!, task, question: question || "Was ist mein nächster Schritt?", code,
+        traceback: state.lastSource === code ? state.lastTraceback : "Kein aktueller Testlauf zu diesem Code."
+      }));
+    if (folder === state.taskDir) { sidebar.showHint(text); }
+  } catch (error) { vscode.window.showErrorMessage((error as Error).message); }
+  finally { pending = false; }
 }

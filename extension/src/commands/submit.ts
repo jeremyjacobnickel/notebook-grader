@@ -4,8 +4,10 @@ import * as vscode from "vscode";
 import { postSubmit } from "../backend/client";
 import { getConfig } from "../config";
 import { state } from "../state";
+import { currentCode } from "../currentTask";
 
 export async function submit(): Promise<void> {
+  if (state.busy) { return; }
   if (!state.lastResult || !state.praktikumId) {
     vscode.window.showErrorMessage(
       "Es gibt noch kein Ergebnis. Führe zuerst " +
@@ -24,6 +26,9 @@ export async function submit(): Promise<void> {
 
   const result = state.lastResult;
   try {
+    if (state.lastSource !== await currentCode()) {
+      throw new Error("Der Code wurde seit dem letzten Test verändert. Bitte erneut testen.");
+    }
     await postSubmit(backendUrl, courseToken, {
       praktikum: state.praktikumId,
       passed: result.isPass,

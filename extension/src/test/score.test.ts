@@ -37,3 +37,8 @@ test("0 Tests insgesamt ist nicht bestanden", () => {
   assert.equal(result.percentage, 0);
   assert.equal(result.isPass, false);
 });
+
+test("aufgerundete Anzeige von 80 Prozent reicht nicht zum Bestehen", () => {
+  assert.equal(computeScore(1599, 2000).percentage, 80);
+  assert.equal(computeScore(1599, 2000).isPass, false);
+});

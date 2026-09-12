@@ -13,7 +13,7 @@ export interface TestCaseResult {
 /**
  * Liest alle <testcase>-Elemente aus einer JUnit-XML-Datei.
  * Ein Testcase gilt als bestanden, wenn er kein <failure> und
- * kein <error> enthält (ein <skipped> zählt also als bestanden).
+ * kein <error> oder <skipped> enthält.
  */
 export function parseJunitXml(xml: string): TestCaseResult[] {
   const results: TestCaseResult[] = [];
@@ -25,7 +25,7 @@ export function parseJunitXml(xml: string): TestCaseResult[] {
     const body = match[2] ?? "";
     const nameMatch = attributes.match(/\bname="([^"]*)"/);
     const name = decodeXmlEntities(nameMatch ? nameMatch[1] : "");
-    const failed = /<(failure|error)\b/.test(body);
+    const failed = /<(failure|error|skipped)\b/.test(body);
     results.push({ name, passed: !failed });
   }
   return results;

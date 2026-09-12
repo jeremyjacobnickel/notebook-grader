@@ -6,6 +6,7 @@ export interface GraderConfig {
   backendUrl: string;
   courseToken: string;
   tasksSource: string;
+  pythonPath: string;
 }
 
 export function getConfig(): GraderConfig {
@@ -15,5 +16,6 @@ export function getConfig(): GraderConfig {
     backendUrl: config.get<string>("backendUrl", "").trim().replace(/\/+$/, ""),
     courseToken: config.get<string>("courseToken", "").trim(),
     tasksSource: config.get<string>("tasksSource", "").trim(),
+    pythonPath: config.get<string>("pythonPath", "").trim(),
   };
 }
