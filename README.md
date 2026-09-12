@@ -12,6 +12,10 @@ submit the result to an FH backend.
 > The project is now an editor-based lab tool, not a server-side notebook
 > grader. See `DECISIONS.md` for the pivot.
 
+## Local prototype (September 2026)
+
+Praktikum 5 now has a Python starter, assignment text and 19 checks. The backend provides SQLite submissions and real FH-LiteLLM hints. See [PROTOTYP.md](PROTOTYP.md) for setup, demo and limitations.
+
 ## Skill level of the maintainer
 
 I am learning Python. I know variables, loops, and functions. I use
@@ -95,7 +99,7 @@ native `pytest` inline feedback in VS Code.
 
 **Open (decide later):** whether the Aufgabenstellung and figures live
 *inline* in the `.py` (e.g. as comments / `# %%` cells) or are shown in a
-*separate program* (browser / Leukipp / ILIAS). Neither path is built yet.
+*separate program* (browser / Leukipp / ILIAS). Praktikum 5 uses the separate `AUFGABEN.md`, opened from the sidebar.
 Data files a task needs (e.g. `peppers.tiff`) ship with the task and are
 placed by "load Praktikum".
 
@@ -142,8 +146,8 @@ request and checked server-side. No SSO/OAuth. The token lives in `.env`
 
 - `extension/` — VS Code extension (TypeScript) — implemented; see
   `extension/README.md` for build/run instructions
-- `backend/`   — FastAPI service (`/submit`, `/hint`) — *skeleton, planned*
-- `tasks/`     — Praktikum definitions (`.py` + autograder) — *skeleton, planned*
+- `backend/`   — FastAPI service (`/submit`, `/hint`) — implemented for the local Praktikum 5 prototype
+- `tasks/`     — Praktikum definitions (`.py` + autograder) — implemented for the local Praktikum 5 prototype
 
 The previous server-side grading package (`grader/`) and its tests were
 removed in the pivot; see `DECISIONS.md`.
@@ -159,7 +163,7 @@ and a full snapshot (with the old `grader/` code) lives on the branch
 
 ## Running tests
 
-`pytest` (it discovers the task autograders under `tasks/`).
+`.venv/bin/python -m pytest` runs backend regression tests. Task checks are run explicitly in the loaded Praktikum folder; the unfinished starter is expected to fail.
 
 ## Important
 

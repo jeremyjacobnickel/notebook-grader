@@ -56,13 +56,13 @@ acting.
 
 The project is a **VS Code extension** for Python lab ("Praktikum")
 submissions, with a minimal FastAPI backend. Students load a task, solve
-it locally, run `pytest` + Hypothesis with one button (inline green/red
+it locally, run `pytest` with one button (inline green/red
 score), optionally ask the AI tutor for a Socratic hint, and submit the
 pass/fail result. Code runs **locally** on the student's machine, so there
 is no server-side sandbox. See the README for the full architecture,
 workflow, and out-of-scope items.
 
-Repository areas (currently skeletons): `extension/`, `backend/`, `tasks/`.
+Repository areas: `extension/`, `backend/`, `tasks/`. Praktikum 5 local prototype is implemented; see PROTOTYP.md. Hypothesis remains deferred.
 
 ## Earlier direction (preserved, not current)
 

@@ -1,16 +1,18 @@
-# Backend (FastAPI)
+# Lokales FastAPI-Backend
 
-Minimal FastAPI service. **Skeleton — not implemented yet.**
+Start: `.venv/bin/python -m uvicorn backend.app:app --host 127.0.0.1 --port 8765`
+aus dem Projektstamm. Einrichtung und Vorführung: [PROTOTYP.md](../PROTOTYP.md).
 
-Planned endpoints:
+- `GET /health`: Erreichbarkeit und ob ein LiteLLM-Key konfiguriert ist.
+- `POST /hint`: Bearer-Token prüfen, maximal sechs Anfragen pro Minute,
+  Aufgabenbeschreibung + Code + Fehler + Frage an den FH-LiteLLM-Proxy.
+  Antwort: `{"hint": "…"}`. Kein Code wird im Backend ausgeführt.
+- `POST /submit`: Konsistente Punktestände in `.local/submissions.sqlite3`
+  speichern. Antwort: `{"ok": true, "submission_id": 1}`.
 
-- `POST /submit` — logs the pass/fail result per student (CSV/SQLite to
-  start).
-- `POST /hint` — proxy to the existing FH AI API. Checks the course
-  token, rate-limits, and injects a system prompt that pins the AI to
-  Socratic help (guiding questions and concepts, never finished
-  solutions).
+Unterstütztes Praktikum: `5_praktikum`. Ein Kurs-Token entspricht im lokalen
+Prototyp einer Demo-Identität; mehrere Studierende sind noch nicht umgesetzt.
 
-No SSO/OAuth — a simple course token is checked on every request.
-Secrets (course token, FH AI API token/URL) live in `.env`; see the
-repository root `.env.example`. The `.env` file is never committed.
+Die `.env` im Projektstamm enthält `COURSE_TOKEN`, `LITELLM_API_KEY`,
+`LITELLM_BASE_URL` und `LITELLM_MODEL`. Sie wird bei Anfragen frisch gelesen.
+Weder Schlüssel noch Code/Dialogsätze werden geloggt oder in SQLite gespeichert.

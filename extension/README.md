@@ -5,6 +5,10 @@ pytest lokal ausführen (Punktestand in Sidebar und Statusleiste),
 bei Bedarf einen KI-Tipp holen und das Ergebnis ans FH-Backend
 abgeben. Bestanden = mindestens 80 % der Tests grün.
 
+## Prototyp für Praktikum 5
+
+Vollständige Einrichtung: [PROTOTYP.md](../PROTOTYP.md). Der Prototyp bietet Aufgabenbeschreibung, 19 Prüfungen, FH-LiteLLM-Tipps und lokale Abgaben. `notebookGrader.pythonPath` legt den Interpreter mit NumPy und pytest fest.
+
 ## Bauen und starten
 
 Voraussetzungen: Node.js 18+, VS Code 1.90+, Python mit pytest.

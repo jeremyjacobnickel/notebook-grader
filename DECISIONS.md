@@ -5,6 +5,18 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
+## 2026-09-12 — Durchgängiger lokaler Prototyp für Praktikum 5
+
+- Aufgaben aus dem bereitgestellten Notebook werden als `.py`-Starter plus `AUFGABEN.md` angeboten. Die persönliche Lösung bleibt außerhalb des Repositories. Kein Notebook-Parser in der Extension nötig.
+- 19 gleich gewichtete Prüfungen für Fakultät, Laplace, Echo und Insertion-Sort. Strukturprüfungen mit `ast` prüfen direkte Selbstaufrufe und die geforderten Schleifen/Methoden; sie sind keine vollständige semantische Verifikation. Beispiel-Prints und leere Sortierlisten sind kein Pflichtpunkt.
+- FastAPI war beschlossen; `uvicorn` führt den lokalen Server aus. `numpy` ist für das Aufgabenmaterial zwingend. `httpx` statt selbst gebauter urllib-Fehlerbehandlung für begrenzte synchrone LiteLLM-Aufrufe und HTTP-Mocktests. `python-dotenv` statt eigener .env-Syntax für robustes Laden der lokalen Schlüssel.
+- LiteLLM wird über den bestehenden FH-Proxy angesprochen, nicht zusätzlich lokal installiert. Basis `https://litellm.fh-muenster.de/v1`, Modell `default_router`, Key nur im Backend. Quellen: FH-Confluence-Anleitung und LiteLLM Proxy-Dokumentation (geprüft 12.09.2026).
+- Lokale SQLite-Abgaben enthalten nur Token-Hash, Praktikum, Ergebnis und Zeitstempel. Ein einzelnes Token ist eine lokale Demo-Identität, kein fertiger Mehrbenutzerbetrieb.
+- pytest-Interpreter ist konfigurierbar; Laufzeit auf 30 Sekunden begrenzt, Abbruch möglich. Übersprungene Tests zählen nicht als bestanden. Bestehensprüfung nutzt ungerundete Werte. Geänderte Lösungen entwerten das Ergebnis.
+- Server nur auf 127.0.0.1. Der lokale Desktop-Prototyp benötigt FH-Netz/VPN für KI-Tipps. Sechs Tipps pro Minute, kein automatischer Retry und keine Speicherung von Code oder KI-Dialogen.
+
+---
+
 ## 2026-07-03 — Toolchain der VS-Code-Extension (`extension/`)
 
 **Kontext:** Die Studierenden-Extension ist ein eigenes npm-Paket in

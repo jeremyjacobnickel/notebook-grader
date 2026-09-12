@@ -2,7 +2,7 @@
   "name": "notebook-grader",
   "displayName": "Notebook Grader",
   "description": "Praktika laden, Tests lokal ausführen und das Ergebnis ans FH-Backend abgeben.",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "license": "MIT",
   "engines": {
@@ -28,6 +28,21 @@
         "command": "notebookGrader.submit",
         "category": "Notebook Grader",
         "title": "Ergebnis abgeben"
+      },
+      {
+        "command": "notebookGrader.hint",
+        "category": "Notebook Grader",
+        "title": "KI-Tipp holen"
+      },
+      {
+        "command": "notebookGrader.showAssignment",
+        "category": "Notebook Grader",
+        "title": "Aufgabenstellung öffnen"
+      },
+      {
+        "command": "notebookGrader.showOutput",
+        "category": "Notebook Grader",
+        "title": "Testdetails anzeigen"
       }
     ],
     "views": {
@@ -56,6 +71,11 @@
           "type": "string",
           "default": "",
           "description": "Ordner mit den Praktikums-Aufgaben. Leer = Ordner 'tasks' im geöffneten Workspace. Relative Pfade beziehen sich auf den Workspace."
+        },
+        "notebookGrader.pythonPath": {
+          "type": "string",
+          "default": "",
+          "description": "Python-Interpreter für pytest, z. B. /pfad/zum/projekt/.venv/bin/python."
         }
       }
     }
