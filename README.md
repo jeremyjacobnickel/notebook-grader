@@ -2,19 +2,14 @@
 
 A VS Code extension plus a minimal FastAPI backend for Python lab
 ("Praktikum") submissions in the *Grundlagen der Programmierung* module
-at a University of Applied Sciences Münster. It replaces the previous manual
-upload to Leukipp: students load a task into their workspace,
-solve it locally in VS Code, run the tests with one button to see their
-score inline (green/red), optionally ask the AI tutor for a hint, and
-submit the result to an FH backend.
+at FH Münster. It replaces the previous manual upload: students load a
+task into their workspace, solve it locally in VS Code, run the tests
+with one button to see their score inline (green/red), optionally ask
+the AI tutor for a Socratic hint, and submit the result to an FH
+backend.
 
-> The repository is still named `notebook-grader` for historical reasons.
-> The project is now an editor-based lab tool, not a server-side notebook
-> grader. See `DECISIONS.md` for the pivot.
-
-## Local prototype (September 2026)
-
-Praktikum 5 now has a Python starter, assignment text and 19 checks. The backend provides SQLite submissions and real FH-LiteLLM hints. See [PROTOTYP.md](PROTOTYP.md) for setup, demo and limitations.
+> The repository is still named `notebook-grader` for historical
+> reasons. See `DECISIONS.md` for the pivots.
 
 ## Skill level of the maintainer
 
@@ -30,14 +25,14 @@ rather than clever patterns.
 
 ## Grading model
 
-Pass / fail only. **Passed = at least 80 % of the total points.** There
-is no exam and no grade pressure — the focus is on learning, not on
-cheating prevention. The local test result is what counts.
+Pass / fail only. **Passed = at least 80 % of the tests.** There is no
+exam and no grade pressure — the focus is on learning, not on cheating
+prevention. The local test result is what counts.
 
 ## Student workflow
 
 1. Load a Praktikum into the workspace via the extension.
-2. Solve the task locally in VS Code (in the `.py` file).
+2. Solve the tasks locally in VS Code (`5_praktikum.py` in the curated prototype, or one `aufgabe_<n>.py` per task in exported folders).
 3. Press **Run tests** → the score is shown inline, green/red.
 4. Optionally press **Hint** → a Socratic AI tip (guiding questions, not
    a finished solution).
@@ -45,40 +40,50 @@ cheating prevention. The local test result is what counts.
 
 ## Components
 
-Three parts:
-
 ### Extension (client) — `extension/`
 
 TypeScript, VS Code API. Three commands — load Praktikum, run tests,
-submit. A sidebar panel shows the current score and a hint button. The
-extension runs `pytest` locally on the student's machine and talks to the
-backend with the course token.
+submit — plus a sidebar panel with the current score and a hint button.
+The extension runs `python -m pytest` locally on the student's machine
+and talks to the backend with the course token. Build and run
+instructions: `extension/README.md`.
 
-### Tests (correctness)
+### Task tooling — `grader/`
 
-Grading runs **locally** on the student's machine. The autograder runs the
-student's `.py` solution in a fresh namespace (non-interactive matplotlib
-`Agg` backend) and checks the expected variables against a reference with a
-tolerance (`np.allclose` for arrays/scalars). This matches the tasks'
-style — most ask to *store a result in a variable* (`decimal_number`,
-`image_mv`, `forces`, …). `pytest` is the runner that wraps these checks
-(inline green/red in VS Code).
+The professor maintains each praktikum as a **Lösung notebook** (markdown
+per task, code cells filled in), usually alongside an Aufgaben version
+with empty code cells. The Lösung notebooks live outside the repo.
 
-Optional `ast` checks cover structural requirements stated in the task
-(e.g. "`np.block` darf nicht verwendet werden", or "durch geschickte
-Indizierung" — i.e. no loop).
+`grader/notebook_reader.py` parses that format;
+`grader/task_exporter.py` turns a Lösung notebook into the folder the
+students receive:
 
-Plot/visualisation tasks (matplotlib) are graded **loosely** — figure
-exists, right number of sub-plots, axis labels/titles set — with the rest
-left to self-review and the AI tutor. Some parts are not auto-graded at
-all (e.g. the "Vibe Coding" drawing, and multiple-choice parts answered in
-the browser).
+```
+tasks/<praktikum>/
+  aufgabe_<n>.py       — stub the student edits (None placeholders)
+  test_aufgabe_<n>.py  — generated pytest checks (floats via pytest.approx)
+```
 
-**Hypothesis** (property-based testing) is **future work**: it only helps
-for tasks written as a *function with inputs*, which the current
-variable-style tasks are not. Not adopted yet.
+Run it with
+`python -m grader.task_exporter <loesung.ipynb> tasks/<id>`
+(optionally `--aufgaben <aufgaben.ipynb>` to verify both notebooks list
+the same tasks).
 
-### Backend — `backend/`
+Two kinds of results are checked:
+
+- **Variables** holding a simple value (number, text, boolean, or a list
+  of those) that the task creates or changes — the style of Praktikum 1.
+- **Functions**: the example calls in the professor's own solution (e.g.
+  `print(factorial_iter(4))`) are executed and their results recorded as
+  test cases — the style of Praktikum 5. Calls whose arguments are
+  variables rather than fixed values cannot be replayed and are skipped,
+  which also excludes recursive calls automatically.
+
+Tasks with no checkable result (text answers, graphics such as the "Vibe
+Coding" drawing) are skipped — they are graded outside the extension.
+The curated Praktikum 5 includes NumPy comparisons and structural `ast` checks. The generic exporter still uses example calls and scalar values. Plot grading and Hypothesis remain future work (see DECISIONS.md).
+
+### Backend — `backend/` (local prototype)
 
 FastAPI, minimal. Two endpoints:
 
@@ -88,29 +93,6 @@ FastAPI, minimal. Two endpoints:
   rate limiting, and a system prompt that pins the AI to Socratic help
   (guiding questions and concepts, never finished solutions). The
   Socratic framing is enforced server-side, not trusted to the client.
-
-## Task format
-
-Tasks are plain **`.py` files**. The assignment *content* stays identical
-to today's material (same problems, same variable names, the
-"store-the-result-in-a-variable" style) — only the container changes from
-`.ipynb` to `.py`, which makes grading a plain run-and-check and gives
-native `pytest` inline feedback in VS Code.
-
-**Open (decide later):** whether the Aufgabenstellung and figures live
-*inline* in the `.py` (e.g. as comments / `# %%` cells) or are shown in a
-*separate program* (browser / Leukipp / ILIAS). Praktikum 5 uses the separate `AUFGABEN.md`, opened from the sidebar.
-Data files a task needs (e.g. `peppers.tiff`) ship with the task and are
-placed by "load Praktikum".
-
-Target per-task layout:
-
-```
-tasks/<praktikum>/
-  <praktikum>.py   — the file the student edits (task content as today)
-  assets/          — data files the task needs (e.g. peppers.tiff)
-  autograder.py    — checks expected variables (np.allclose) + optional ast checks
-```
 
 ## AI tutor role
 
@@ -145,29 +127,37 @@ request and checked server-side. No SSO/OAuth. The token lives in `.env`
 ## Repository layout
 
 - `extension/` — VS Code extension (TypeScript) — implemented; see
-  `extension/README.md` for build/run instructions
-- `backend/`   — FastAPI service (`/submit`, `/hint`) — implemented for the local Praktikum 5 prototype
-- `tasks/`     — Praktikum definitions (`.py` + autograder) — implemented for the local Praktikum 5 prototype
+  `extension/README.md`
+- `grader/`   — notebook parsing + task exporter (Python) — implemented
+- `tests/`    — pytest tests for `grader/`
+- `backend/`  — FastAPI service (`/submit`, `/hint`) — local prototype implemented
+- `tasks/`    — curated Praktikum 5 starter and 19 checks
+- `examples/exported/` — preserved examples from the generic exporter
 
-The previous server-side grading package (`grader/`) and its tests were
-removed in the pivot; see `DECISIONS.md`.
+## Running tests
+
+- Python: `pytest tests/`
+- Extension: `cd extension && npm run lint && npm test`
+
+## Important
+
+- Never commit the `.env` file. Use `.env.example` as the template.
+- Real student submissions contain personal data — they live outside
+  the repo.
+- **Never commit the professor's Lösung notebooks** — students could
+  find them. Only the Aufgaben version is committed as a test fixture.
+- The `notebookGrader.courseToken` setting is a secret: the extension
+  sends it only as an Authorization header and never logs it.
 
 ## Alternative / earlier direction
 
 Before this, the project was planned as a server-side grading pipeline
-that ILIAS launches over LTI. That idea is **not deleted** — it is kept as
-a documented fallback in
+that ILIAS launches over LTI. That idea is **not deleted** — it is kept
+as a documented fallback in
 [`docs/alternatives/ilias-lti-webserver.md`](docs/alternatives/ilias-lti-webserver.md),
-and a full snapshot (with the old `grader/` code) lives on the branch
-`archive/ilias-lti-webserver`.
+with a full code snapshot on the branch `archive/ilias-lti-webserver`.
 
-## Running tests
 
-`.venv/bin/python -m pytest` runs backend regression tests. Task checks are run explicitly in the loaded Praktikum folder; the unfinished starter is expected to fail.
+## September 2026: integrated LiteLLM prototype
 
-## Important
-
-- Never commit the `.env` file — it holds the backend/AI tokens. Use
-  `.env.example` as the template.
-- Real student submissions contain personal data — they live outside the
-  repo. Only example/starter tasks under `tasks/` are committed.
+The local prototype is implemented and manually verified; see [PROTOTYP.md](PROTOTYP.md). The notebook reader and exporter remain available. The default `tasks/5_praktikum` uses one `5_praktikum.py` plus 19 curated checks; the earlier generated per-task example is preserved under `examples/exported/5_praktikum`. Both file layouts are supported by the extension. Backend hints and submissions currently support Praktikum 5 and one local demo identity.

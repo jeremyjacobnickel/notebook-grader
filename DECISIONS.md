@@ -5,6 +5,17 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
+## 2026-09-13 — Zusammenführung mit main, Version 0.3.0
+
+Der lokale LiteLLM-Prototyp ersetzt die parallelen Extension-Implementierungen.
+Notebook-Reader und Exporter bleiben erhalten. Die Extension erkennt beide
+Aufgabenlayouts und verwendet für neue Bearbeitungen `work/<id>/`.
+Das bisherige generierte Praktikum 5 bleibt unter `examples/exported/5_praktikum/`,
+damit zwei unterschiedliche Bewertungsmodelle nicht gemeinsam ausgeführt werden.
+Der Dependency-Lock von main einschließlich js-yaml-Sicherheitsfix wird übernommen.
+
+---
+
 ## 2026-09-12 — Durchgängiger lokaler Prototyp für Praktikum 5
 
 - Aufgaben aus dem bereitgestellten Notebook werden als `.py`-Starter plus `AUFGABEN.md` angeboten. Die persönliche Lösung bleibt außerhalb des Repositories. Kein Notebook-Parser in der Extension nötig.
@@ -14,6 +25,118 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 - Lokale SQLite-Abgaben enthalten nur Token-Hash, Praktikum, Ergebnis und Zeitstempel. Ein einzelnes Token ist eine lokale Demo-Identität, kein fertiger Mehrbenutzerbetrieb.
 - pytest-Interpreter ist konfigurierbar; Laufzeit auf 30 Sekunden begrenzt, Abbruch möglich. Übersprungene Tests zählen nicht als bestanden. Bestehensprüfung nutzt ungerundete Werte. Geänderte Lösungen entwerten das Ergebnis.
 - Server nur auf 127.0.0.1. Der lokale Desktop-Prototyp benötigt FH-Netz/VPN für KI-Tipps. Sechs Tipps pro Minute, kein automatischer Retry und keine Speicherung von Code oder KI-Dialogen.
+
+
+---
+
+## 2026-08-04 — Konverter prüft auch Funktions-Aufgaben
+
+**Kontext:** Das 5. Praktikum ist anders aufgebaut als das erste. Statt
+"Ergebnis in Variable speichern" verlangt es **Funktionen**
+(`factorial_iter`, `echo`, `insertion_sort` …). Der Konverter prüfte
+bisher nur einfache Variablenwerte und hätte hier fast nichts erzeugt.
+
+**Alternativen:**
+- Erwartungswerte von Hand pflegen — skaliert nicht über 5+ Praktika.
+- Testfälle selbst erfinden (zufällige Eingaben) — bräuchte Wissen über
+  die erlaubten Eingabebereiche und liefert keine Erwartungswerte.
+- **Beispielaufrufe aus der Musterlösung ernten:** Der Prof ruft seine
+  Funktionen in der Lösung ohnehin mit festen Werten auf
+  (`print(factorial_iter(4))`), um sie vorzuführen.
+
+**Entscheidung:** Der Konverter sammelt die Aufrufe aus dem Lösungscode,
+bei denen **alle Argumente feste Werte** sind, führt sie aus und schreibt
+das Ergebnis als Test fest. Zusätzlich wird der Vorspann des Notebooks
+(Code-Zellen vor der ersten Aufgabe, z. B. `import numpy as np`)
+ausgeführt und in jeden Stub übernommen.
+
+**Begründung:** Die Testfälle stammen damit vom Prof selbst und sind
+genau die, die er als aussagekräftig ansieht — ohne Zusatzaufwand.
+Aufrufe mit Variablen als Argument (`factorial_rec(number - 1)`,
+`det_laplace(A)`) lassen sich nicht nachstellen und fallen automatisch
+heraus; rekursive Aufrufe damit ebenfalls.
+
+**Grenze:** NumPy-Arrays werden weiterhin nicht geprüft (eine 5x5-Matrix
+lässt sich nicht sinnvoll als Literal in eine Testdatei schreiben).
+Beim 5. Praktikum betrifft das `A`, `A_00` und `A_12`; die daraus
+berechnete Determinante `det_A` wird geprüft und deckt `submatrix` und
+`det_laplace` indirekt mit ab. Ein späterer `np.allclose`-Vergleich
+bleibt möglich.
+
+**Folge:** Das Aufgaben-Notebook ist für den Export nicht mehr nötig
+(die Lösung enthält dieselben Überschriften). Es kann mit `--aufgaben`
+weiterhin zur Kontrolle angegeben werden. Neuer Aufruf:
+`python -m grader.task_exporter <loesung.ipynb> <ziel>`.
+
+---
+
+## 2026-08-03 — Konverter: eine Datei pro Aufgabe, nur Variablen-Checks
+
+**Kontext:** `grader/task_exporter.py` erzeugt aus dem Notebook-Paar die
+`tasks/`-Ordner für die Extension. In den Notebooks verwenden mehrere
+Aufgaben dieselben Variablennamen (`a`, `b`, `c` …) — in einer
+gemeinsamen Datei würden sie sich überschreiben.
+
+**Entscheidung (Maintainer):**
+- **Eine Datei pro Aufgabe:** `aufgabe_<n>.py` + `test_aufgabe_<n>.py`.
+- Die Stubs enthalten **None-Platzhalter** für die erwarteten Variablen.
+  So schlägt der Import in den Tests nie fehl und eine ungelöste
+  Aufgabe stoppt nicht den ganzen pytest-Lauf (die Extension ruft
+  pytest zusätzlich mit `--continue-on-collection-errors` auf).
+- Getestet werden nur **einfache Variablenwerte** (Zahlen, Strings,
+  bool), die die Lösung der jeweiligen Aufgabe neu anlegt oder ändert.
+  Floats mit `pytest.approx`.
+- **Aufgaben mit Textantworten statt Code werden nicht über die
+  Extension geprüft** — sie erzeugen keine Dateien und zählen nicht in
+  die 80-%-Grenze. Die Kontrolle passiert anderswo (z. B. Leukipp).
+
+**Begründung:** Einfachstes Layout, das die Variablen-Kollisionen löst;
+der Studierenden-Fortschritt bleibt als Prozentwert über alle
+generierten Tests korrekt messbar.
+
+---
+
+## 2026-08-03 — `grader/` bleibt: Basis für den Notebook-Konverter
+
+**Kontext:** Nach dem Wechsel zur VS-Code-Extension war offen, ob die
+alte Notebook-Pipeline (`grader/notebook_reader.py`) entfernt wird
+("no dead code"). Jetzt ist geklärt: Der Prof pflegt die Praktika
+weiterhin als Jupyter-Notebook-Paar — eine **Aufgaben-Version**
+(Markdown-Aufgaben, leere Code-Zellen) und eine **Lösungs-Version**
+(gleiche Zellen, ausgefüllt, mit Ausgaben).
+
+**Entscheidung:** `notebook_reader.py` bleibt und wird die Basis des
+Konverters Notebook → `tasks/<id>/` (Aufgaben-Stub + pytest-Tests).
+
+**Begründung:** Der Reader parst genau dieses Format bereits
+(verifiziert gegen das echte 1. Praktikum, Aufgaben- und
+Lösungs-Version: je 7 Aufgaben sauber erkannt) und ist getestet.
+Lösungs-Notebooks werden wie echte Abgaben NIE committet — sonst
+könnten Studierende sie im Repo finden.
+
+---
+
+## 2026-08-03 — VS-Code-Extension statt LTI/ILIAS-Einbindung
+
+**Kontext:** Ursprünglich war geplant, den Grader als Web-Tool über LTI
+in ILIAS einzubinden (3-Stufen-Plan: lokal → FH-Webserver → LTI).
+
+**Alternativen:**
+- LTI-Web-Tool: Flask-Server an der FH, Registrierung durch den
+  ILIAS-Admin, Server-Sandbox für Studierenden-Code, DSGVO-Klärung für
+  Notebook-Uploads.
+- VS-Code-Extension: Studierende arbeiten lokal in VS Code, die Tests
+  laufen auf dem eigenen Rechner; nur das Ergebnis (bestanden ab 80 %)
+  und — für KI-Tipps — der Code gehen an ein kleines FH-Backend.
+
+**Entscheidung:** VS-Code-Extension. Der Client liegt in `extension/`,
+das FH-Backend (`POST /submit`, `POST /hint`) folgt separat.
+
+**Begründung:** Einfach zu installieren und zu verteilen, keine
+Server-Sandbox nötig (der Code läuft beim Studierenden), kein
+LTI-/ILIAS-Abstimmungsprozess. Trade-off: keine automatische Note im
+ILIAS-Gradebook — das Backend sammelt die Bestanden-Status über ein
+Kurs-Token.
 
 ---
 

@@ -6,6 +6,16 @@
 import * as fs from "fs/promises";
 import * as path from "path";
 
+/** Unterstützt sowohl den Prototyp als auch Dateien aus dem Notebook-Exporter. */
+export async function solutionFiles(folder: string): Promise<string[]> {
+  const names = await fs.readdir(folder);
+  const main = `${path.basename(folder)}.py`;
+  const selected = names.includes(main) ? [main] : names
+    .filter(name => /^aufgabe_\d+\.py$/.test(name))
+    .sort((a, b) => a.localeCompare(b, undefined, { numeric: true }));
+  return selected.map(name => path.join(folder, name));
+}
+
 /** Listet die verfügbaren Praktikums-Ids (Unterordner der Quelle). */
 export async function listTaskIds(sourceDir: string): Promise<string[]> {
   const entries = await fs.readdir(sourceDir, { withFileTypes: true });

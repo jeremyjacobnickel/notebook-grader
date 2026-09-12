@@ -5,7 +5,7 @@ import * as fs from "fs/promises";
 import * as vscode from "vscode";
 import { getConfig } from "../config";
 import { state } from "../state";
-import { copyTask, listTaskIds } from "../taskSource";
+import { copyTask, listTaskIds, solutionFiles } from "../taskSource";
 
 export async function loadPraktikum(): Promise<void> {
   if (state.busy) { return; }
@@ -50,7 +50,8 @@ export async function loadPraktikum(): Promise<void> {
     return; // abgebrochen
   }
 
-  const targetDir = path.join(workspaceRoot, id);
+  const legacyDir = path.join(workspaceRoot, id);
+  const targetDir = await fs.stat(legacyDir).then(() => legacyDir, () => path.join(workspaceRoot, "work", id));
   try {
     const exists = await fs.stat(targetDir).then(() => true, () => false);
     // Vorhandene Bearbeitungen nur wieder öffnen, niemals mit dem Starter ersetzen.
@@ -69,12 +70,14 @@ export async function loadPraktikum(): Promise<void> {
   state.lastTraceback = "";
   state.lastSource = undefined;
 
-  const mainFile = vscode.Uri.file(path.join(targetDir, `${id}.py`));
   try {
+    const files = await solutionFiles(targetDir);
+    if (!files.length) { throw new Error("Keine Aufgaben-Datei gefunden"); }
+    const mainFile = vscode.Uri.file(files[0]);
     await vscode.window.showTextDocument(mainFile);
   } catch {
     vscode.window.showWarningMessage(
-      `Das Praktikum wurde geladen, aber ${id}.py wurde darin nicht gefunden.`
+      `Das Praktikum wurde geladen, aber ${id}.py bzw. aufgabe_*.py wurde darin nicht gefunden.`
     );
   }
 }

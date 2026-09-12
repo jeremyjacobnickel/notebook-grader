@@ -101,3 +101,7 @@ Quellen: [FH-LiteLLM-Anleitung](https://confluence.fh-muenster.de/spaces/howto/p
 - Absichtlich falscher Rekursionsschritt: genau der passende Verhaltenstest fehlgeschlagen, 18/19 bestanden.
 - Echter FH-LiteLLM-Aufruf über die Extension erfolgreich; Antwort in der Sidebar angezeigt.
 - Lokale Abgabe über den Extension-Button bestätigt und in SQLite nachgeprüft.
+
+## Integration auf main (13.09.2026)
+
+Version 0.3.0 führt den getesteten LiteLLM-Prototyp mit dem vorhandenen Notebook-Exporter zusammen. Neue Bearbeitungen werden unter `work/<id>/` angelegt; vorhandene Demo-Ordner direkt im Workspace werden weiterverwendet. Die Extension unterstützt sowohl `<id>.py` als auch `aufgabe_<n>.py`. Die bisherigen generierten Praktikum-5-Dateien liegen unverändert unter `examples/exported/5_praktikum/`, damit ihre 17 Tests nicht versehentlich zusätzlich zu den 19 kuratierten Tests laufen. Der js-yaml-Sicherheitsfix aus main bleibt im Paket-Lock erhalten.

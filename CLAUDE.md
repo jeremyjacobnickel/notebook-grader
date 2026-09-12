@@ -24,8 +24,9 @@ acting.
 - **Match the maintainer's skill level.** `@dataclass` and `@property`
   are fine. Custom decorators, metaclasses, descriptors, generator
   protocols, and async are not. This applies to the Python code
-  (`backend/`, `tasks/`). The TypeScript extension (`extension/`) follows
-  the official VS Code extension samples — kept small and conventional.
+  (`grader/`, `backend/`, `tasks/`). The TypeScript extension
+  (`extension/`) follows the official VS Code extension samples —
+  kept small and conventional, no clever abstractions.
 - **No dead code, no speculative abstractions.** Build what the current
   task needs.
 
@@ -42,33 +43,87 @@ acting.
 - Work on a feature branch, never directly on `main`.
 - Commit `frame-only` changes (docs, configs, fixtures) separately from
   code changes when both fit in one PR.
-- Run `pytest` before opening a PR (it discovers the task tests under
-  `tasks/`).
+- Before opening a PR: `pytest tests/` for Python changes,
+  `npm run lint && npm test` in `extension/` for extension changes.
 
 ## Files that must never be committed
 
 - `.env` (use `.env.example` as the template) — it holds the course and
   FH AI API tokens.
 - Real student submissions — they contain personal data and live outside
-  the repo. Only example/starter tasks under `tasks/` are committed.
+  the repo.
+- **The professor's Lösung notebooks** — students could find them in
+  the repo. Only the Aufgaben version (empty code cells) may be
+  committed as a fixture (`tests/fixtures/1_Praktikum.ipynb`).
+- The real `notebookGrader.courseToken` value — never in code, logs,
+  fixtures, or docs.
 
-## Current plan (June 2026): VS Code extension + FastAPI backend
+## Current state (August 2026)
 
-The project is a **VS Code extension** for Python lab ("Praktikum")
-submissions, with a minimal FastAPI backend. Students load a task, solve
-it locally, run `pytest` with one button (inline green/red
-score), optionally ask the AI tutor for a Socratic hint, and submit the
-pass/fail result. Code runs **locally** on the student's machine, so there
-is no server-side sandbox. See the README for the full architecture,
-workflow, and out-of-scope items.
+- **Direction:** VS-Code-Extension + FastAPI backend, no LTI/ILIAS
+  (see DECISIONS.md 2026-06-29 and 2026-08-03).
+- `extension/` v1 is built: three commands (`loadPraktikum`, `runTests`,
+  `submit`) plus `hint`, a sidebar (WebviewView) and a status bar item.
+  Pure score/JUnit logic is unit-tested (`npm test`, node:test).
+  Manual testing of the local LiteLLM prototype is complete (PROTOTYP.md).
+- **Task source format is fixed** (see DECISIONS.md 2026-08-03): the
+  professor maintains each praktikum as a pair of Jupyter notebooks —
+  an Aufgaben version (markdown per task: `## N. Aufgabe: Titel`,
+  empty code cells) and a Lösung version (same cells, filled in).
+  `tests/fixtures/1_Praktikum.ipynb` is the real Aufgaben version.
+- `grader/task_exporter.py` **converts** a Lösung notebook into a
+  `tasks/<id>/` folder: one `aufgabe_<n>.py` stub plus one
+  `test_aufgabe_<n>.py` per task. It checks both **variables** with a
+  simple value (Praktikum 1 style) and **functions**, using the example
+  calls in the solution itself as test cases (Praktikum 5 style).
+  Tasks with no checkable result (text answers, graphics) are skipped
+  and are NOT graded by the extension (see DECISIONS.md 2026-08-03).
+  `notebook_reader.py` does the parsing underneath, including the
+  preamble cells before the first task (e.g. `import numpy as np`).
+- The earlier exported Praktikum 5 (4 tasks, 17 tests) is preserved under
+  `examples/exported/5_praktikum/`. `tasks/5_praktikum/` now contains the
+  curated 19-check prototype. Lösung notebooks are never committed.
+- `backend/` implements the local LiteLLM prototype; see PROTOTYP.md.
+- History note: an earlier parallel extension implementation from the
+  `feat/vscode-extension` branch was superseded by this one when the
+  branches were merged (2026-08-03); the surviving implementation is
+  the one wired to the task_exporter layout.
 
-Repository areas: `extension/`, `backend/`, `tasks/`. Praktikum 5 local prototype is implemented; see PROTOTYP.md. Hypothesis remains deferred.
+## The plan: VS-Code-Extension + FH backend
+
+1. **Extension (client) — done in v1.** Students load a task, run
+   pytest locally (pass = ≥ 80 % of tests), see the score inline, and
+   submit the result. AI hints come from the backend.
+2. **FH backend — next.** FastAPI service implementing the two
+   contracts the extension already uses: `POST /submit` (store result
+   per course token) and `POST /hint` (proxy to the FH AI API that
+   returns a Socratic hint; the Socratic framing is enforced
+   server-side).
+3. **Rollout.** Package the extension (`vsce package` → `.vsix`),
+   distribute tasks (for now a local `tasks/` folder; the seam in
+   `loadPraktikum` allows a backend download later), hand out course
+   tokens.
+
+## Known critical risks
+
+- **DSGVO / data protection:** `/hint` sends student code to the
+  backend and from there to an LLM. Needs a legal basis / processing
+  agreement (AVV), or the LLM must stay inside FH infrastructure.
+  (Server-side sandboxing is no longer needed — student code runs on
+  the student's own machine.)
+- **courseToken** is a shared secret per course. Never log it; treat
+  leaked tokens as replaceable.
 
 ## Earlier direction (preserved, not current)
 
 The project was previously planned as a **server-side grading pipeline
-launched by ILIAS over LTI** (the 3-stage local → web server → LTI plan).
-That idea is **not deleted** — it is kept as a documented fallback in
-`docs/alternatives/ilias-lti-webserver.md`, with a full code snapshot on
-the branch `archive/ilias-lti-webserver`. Do not treat it as the active
-plan; consult it only if the editor-based approach is abandoned.
+launched by ILIAS over LTI**. That idea is **not deleted** — it is kept
+as a documented fallback in `docs/alternatives/ilias-lti-webserver.md`,
+with a full code snapshot on the branch `archive/ilias-lti-webserver`.
+Do not treat it as the active plan; consult it only if the editor-based
+approach is abandoned.
+
+
+## September 2026: integrated LiteLLM prototype
+
+The local prototype is implemented and manually verified; see [PROTOTYP.md](PROTOTYP.md). The notebook reader and exporter remain available. The default `tasks/5_praktikum` uses one `5_praktikum.py` plus 19 curated checks; the earlier generated per-task example is preserved under `examples/exported/5_praktikum`. Both file layouts are supported by the extension. Backend hints and submissions currently support Praktikum 5 and one local demo identity.

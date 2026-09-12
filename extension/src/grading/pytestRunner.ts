@@ -11,7 +11,7 @@ export async function runPytest(cwd: string, pythonPath = "", token?: Cancellati
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), "notebook-grader-"));
   const report = path.join(temp, "report.xml");
   try {
-    const args = ["-m", "pytest", "-q", "--tb=short", `--junitxml=${report}`];
+    const args = ["-m", "pytest", "-q", "--tb=short", "--continue-on-collection-errors", `--junitxml=${report}`];
     let run;
     try { run = await runProcess(pythonPath || "python", args, cwd, token); }
     catch (error) {

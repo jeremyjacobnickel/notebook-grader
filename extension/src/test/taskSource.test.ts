@@ -3,7 +3,20 @@ import * as assert from "node:assert/strict";
 import * as fs from "fs/promises";
 import * as os from "os";
 import * as path from "path";
-import { copyTask } from "../taskSource";
+import { copyTask, solutionFiles } from "../taskSource";
+
+test("Exporter-Aufgaben werden numerisch sortiert und Tests ausgeschlossen", async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), "grader-layout-"));
+  try {
+    for (const name of ["aufgabe_10.py", "aufgabe_2.py", "test_aufgabe_2.py"]) {
+      await fs.writeFile(path.join(temp, name), "");
+    }
+    assert.deepEqual((await solutionFiles(temp)).map(file => path.basename(file)), ["aufgabe_2.py", "aufgabe_10.py"]);
+    await fs.writeFile(path.join(temp, `${path.basename(temp)}.py`), "");
+    assert.equal((await solutionFiles(temp)).length, 1);
+    assert.equal(path.basename((await solutionFiles(temp))[0]), `${path.basename(temp)}.py`);
+  } finally { await fs.rm(temp, {recursive: true, force: true}); }
+});
 
 test("erneutes Kopieren überschreibt keine Bearbeitung", async () => {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), "grader-copy-"));

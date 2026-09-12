@@ -19,12 +19,12 @@ Führen Sie die folgende Zelle **vor** der Bearbeitung der Aufgaben aus. Denken 
 
 ## 1. Aufgabe: Fakultät
 
-Definieren Sie eine Funktion `factorial`, die die Fakultät einer Zahl `number` berechnet. 
+Definieren Sie eine Funktion `factorial`, die die Fakultät einer Zahl `number` berechnet.
 
 Die Fakultät ist über
 
 $$
-    x! = \prod_{i=1}^x i,\qquad x\in\mathbb N_{+} 
+    x! = \prod_{i=1}^x i,\qquad x\in\mathbb N_{+}
 $$
 
 definiert. Beispielsweise berechnet sich $5!$ über
@@ -101,7 +101,7 @@ $$
 
 **Hinweis:**
 
-- 1.: 
+- 1.:
     - Zur Erinnerung: Der grundsätzliche Fall ist der Fall, wo die Funktion **nicht** mehr sich selbst aufruft.
     - Sie können $j=0$ wählen und damit nach der ersten Spalte entwickeln.
 - 2.: Sie können Ihre Berechnung mit `np.linalg.det` prüfen.
@@ -110,7 +110,7 @@ $$
 
 In den folgenden Aufgabenteilen soll Schritt für Schritt eine Funktion programmiert werden, die in schriftlicher Form das Echo eines gesprochenen Satzes im Gebirge nachahmt. Der letzte Aufgabenteil löst damit die Gesamtaufgabe.
 
-Die Eingabe 
+Die Eingabe
 
     Das Echo
 
