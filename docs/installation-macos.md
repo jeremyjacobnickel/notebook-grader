@@ -46,15 +46,16 @@ npx @vscode/vsce package
 ```
 
 Der letzte Befehl fragt ggf. ein-, zweimal nach (mit `y` bestätigen)
-und erzeugt die Datei **`notebook-grader-0.1.0.vsix`** — sie liegt im
-Ordner `notebook-grader/extension/` (im Terminal zeigt `open .` den
-Ordner im Finder).
+und erzeugt die Datei **`notebook-grader-<version>.vsix`** (aktuell
+`notebook-grader-0.2.0.vsix`) — sie liegt im Ordner
+`notebook-grader/extension/` (im Terminal zeigt `open .` den Ordner
+im Finder).
 
 ## 5. Extension in VS Code installieren
 
 1. VS Code öffnen → Extensions-Ansicht (`Cmd+Shift+X`).
 2. Oben rechts auf das **„…"-Menü** → **„Install from VSIX…"**.
-3. Die Datei `notebook-grader-0.1.0.vsix` auswählen.
+3. Die erzeugte `.vsix`-Datei auswählen.
 
 ## 6. Einrichten und ausprobieren
 
@@ -72,6 +73,39 @@ Ordner im Finder).
 „Ergebnis abgeben" und „KI-Tipp holen" brauchen das FH-Backend
 (Einstellungen `backendUrl` + `courseToken`); solange es nicht läuft,
 zeigen diese Befehle eine freundliche Fehlermeldung.
+
+## Aktualisieren, wenn sich im Repo etwas geändert hat
+
+Die Extension holt sich Änderungen **nicht** von allein — sie ist eine
+lokal installierte Datei. Nach neuen Commits auf `main` sind es diese
+vier Schritte:
+
+```bash
+cd notebook-grader
+git checkout main
+git pull                      # neue Änderungen holen
+cd extension
+npm install                   # nur nötig, wenn sich Abhängigkeiten geändert haben
+npm run compile
+npx @vscode/vsce package      # erzeugt die neue .vsix
+```
+
+Dann in VS Code: **Extensions → „…"-Menü → „Install from VSIX…"** und die
+neue Datei auswählen. VS Code ersetzt die alte Fassung und fragt nach
+einem Neustart des Fensters.
+
+**Gute Gewohnheit:** Vor `git pull` prüfen, ob eigene Änderungen im
+Projektordner liegen (`git status`) — sonst kann der Pull abbrechen.
+Die Aufgaben, an denen du arbeitest, liegen im `work/`-Ordner deines
+Workspace und werden von einem Update **nicht** angefasst.
+
+**Wenn die Versionsnummer gleich geblieben ist** (z. B. zweimal `0.2.0`),
+erkennt VS Code die neue Datei manchmal nicht als Änderung. Dann erst
+deinstallieren, danach neu installieren:
+
+```bash
+code --uninstall-extension fh-muenster.notebook-grader
+```
 
 ## Häufige Probleme
 
