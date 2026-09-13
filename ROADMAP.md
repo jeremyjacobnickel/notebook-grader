@@ -28,21 +28,33 @@ Stand: 2026-08-03.
   nur Aufgabe 4 gelöst → 4/37 Tests (10,8 %), Musterlösung überall →
   37/37 (100 %, bestanden).
 
-## Als Nächstes
+## Als Nächstes: Kursbetrieb mit etwa 100 Studierenden
 
-1. **Manuell testen im Extension Development Host** (F5 in VS Code,
-   Anleitung in `extension/README.md`) — kann nur der Maintainer:
-   QuickPick, Sidebar, StatusBar, Fehlermeldungen.
-2. **FH-Backend bauen** (eigenes Projekt oder `backend/` hier):
-   `POST /submit` speichert Ergebnis je Kurs-Token,
-   `POST /hint` ruft das LLM für einen sokratischen Tipp.
-   Vorher DSGVO klären (AVV oder FH-internes LLM).
-3. **Echte Aufgaben exportieren:** Der Prof (oder Maintainer) führt den
-   Konverter für jedes Praktikum aus und legt die Ergebnisse in den
-   `tasks/`-Ordner, den die Studierenden bekommen. Auf dem Rechner
-   müssen die Pakete der Lösungen installiert sein (numpy, matplotlib).
-4. **Verteilung:** `vsce package` → `.vsix` an die Studierenden;
-   Kurs-Token-Ausgabe organisieren.
+Die folgenden Punkte sind geplant, noch nicht implementiert:
+
+1. Persönliche, widerrufbare Zugänge und Kurszuordnung statt gemeinsamem Token.
+2. Dauerhaftes FH-Backend mit HTTPS, PostgreSQL, automatischem Neustart,
+   Überwachung und geprüften Sicherungen. Erreichbarkeit zuhause über VPN
+   oder eine von der FH freigegebene öffentliche Schnittstelle klären.
+3. Zentrale, versionierte Aufgabenverteilung und installierbare Extension.
+4. Professorenansicht für Kurse, Veröffentlichungen, Deadlines,
+   individuelle Fristverlängerungen, Abgabeübersicht und CSV-Export.
+5. Deadline anhand der Serverzeit prüfen; Zeitzone explizit anzeigen.
+   Vorschlag: letzte rechtzeitig bestätigte Abgabe zählt, spätere lokale
+   Bearbeitung bleibt möglich. Regeln für verspätete Abgaben mit dem Prof
+   festlegen. Wiederholte Übermittlung derselben Abgabe darf keine Duplikate
+   erzeugen; Abgabe-ID und Serverzeit als Bestätigung zurückgeben.
+6. Gemeinsame KI-Limits/Budgets über Backend-Prozesse hinweg, begrenzte
+   Parallelität und Warteschlange. Abgaben dürfen nicht durch wartende
+   KI-Anfragen blockiert werden. Kapazität mit der FH abstimmen und mit
+   100 simulierten Nutzern testen; zuerst Pilotgruppe, dann ganzer Kurs.
+7. Optional: Arbeitsstände getrennt von verbindlichen Abgaben speichern
+   und laden, falls Studierende zwischen Labor-PC und privatem Gerät wechseln.
+
+Lokales Bearbeiten und Testen bleibt offline möglich. KI, Aufgabenabruf
+und Abgabe benötigen eine Verbindung. Die lokale Bewertung bleibt gemäß
+README die Grundlage; serverseitige unabhängige Codeprüfung ist nicht Teil
+dieses Ausbauplans.
 
 ## Offene Punkte / Orga
 
@@ -61,3 +73,14 @@ Stand: 2026-08-03.
 ## Update 2026-09-13
 
 The local Praktikum 5 prototype, real FH-LiteLLM hints, SQLite submission and manual VS Code validation are complete; see PROTOTYP.md. Remaining: individual course identities, FH deployment, distribution and professor-approved scoring. The existing notebook exporter and its tests are retained.
+
+## Umgesetzt: gezielte Tipps und Teilaufgaben
+
+- Gezielter Kontext für FH-LiteLLM samt Hilfsfunktionen und Testfehlern.
+- Verbrauchsmetadaten in SQLite und in der Seitenleiste; unbekannte Kosten
+  und Router-Modellzuordnung werden nicht geschätzt.
+- Klartextantworten mit Bereinigung häufiger LaTeX-/Markdown-Markierungen.
+- Einzelprüfung der Teilaufgaben in Praktikum 5, Status „offen“ bei fehlenden
+  Definitionen/Platzhaltern, verständliche Fehlerdetails.
+- Einzeltest-Ergebnisse sind nicht als Gesamtpraktikum abgebbar.
+- Grenzen und aktualisierte Testdateien: siehe PROTOTYP.md.

@@ -161,3 +161,18 @@ with a full code snapshot on the branch `archive/ilias-lti-webserver`.
 ## September 2026: integrated LiteLLM prototype
 
 The local prototype is implemented and manually verified; see [PROTOTYP.md](PROTOTYP.md). The notebook reader and exporter remain available. The default `tasks/5_praktikum` uses one `5_praktikum.py` plus 19 curated checks; the earlier generated per-task example is preserved under `examples/exported/5_praktikum`. Both file layouts are supported by the extension. Backend hints and submissions currently support Praktikum 5 and one local demo identity.
+
+
+## Aktuelle Erweiterungen (September 2026)
+
+Praktikum 5 kann nun pro Teilaufgabe geprüft werden. Fehlende Definitionen
+und Platzhalter erscheinen als offen; Originalfehler sind aufklappbar.
+Für eine Abgabe ist weiterhin ein Gesamttest erforderlich. Neue KI-Tipps
+werden als Klartext ausgegeben und enthalten eine Verbrauchsanzeige.
+Das Backend reduziert den Kontext vor der Weitergabe an FH-LiteLLM und
+speichert Verbrauchsmetadaten ohne Lerninhalte. Details und Grenzen:
+[PROTOTYP.md](PROTOTYP.md), [Backend](backend/README.md).
+
+Kursbetrieb für etwa 100 Studierende, persönliche Zugänge und vom Professor
+verwaltete Deadlines sind als nächste Ausbaustufe in [ROADMAP.md](ROADMAP.md)
+beschrieben; diese Funktionen sind noch nicht implementiert.

@@ -430,3 +430,15 @@ präzisiert (siehe README).
 **Begründung:** Eine Dependency weniger. Wir brauchen aktuell weder
 Validierung noch Schreib-Operationen. Wechsel auf `nbformat` ist ein
 Einzeiler, falls später Roundtrips nötig werden.
+
+## September 2026: Teilaufgaben und offene Versuche
+
+Für den kuratierten Praktikum-5-Prototyp werden fehlende Namen und reine
+Platzhalter vor jedem Test erkannt. Diese Prüfungen sind offen (pytest skip),
+zählen aber weiter als nicht bestandene Punkte. Einzeltests werden mit
+`-k test_<teilaufgabe>_` ausgewählt und niemals zur Gesamtabgabe freigegeben.
+Die lokale Ausführung lädt benötigte AST-Definitionen und Abhängigkeiten;
+unbeteiligte Beispielaufrufe werden ausgelassen. Das vermeidet eine Blockade
+durch Laufzeitfehler anderer Aufgaben, verändert aber bewusst das bisherige
+vollständige `runpy`-Ausführungsverhalten. Syntaxfehler der gemeinsamen Datei
+bleiben global. Keine neuen Abhängigkeiten, kein serverseitiges Ausführen.

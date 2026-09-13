@@ -43,6 +43,11 @@
         "command": "notebookGrader.showOutput",
         "category": "Notebook Grader",
         "title": "Testdetails anzeigen"
+      },
+      {
+        "command": "notebookGrader.testSubtask",
+        "category": "Notebook Grader",
+        "title": "Teilaufgabe prüfen"
       }
     ],
     "views": {

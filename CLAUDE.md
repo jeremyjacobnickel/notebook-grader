@@ -127,3 +127,14 @@ approach is abandoned.
 ## September 2026: integrated LiteLLM prototype
 
 The local prototype is implemented and manually verified; see [PROTOTYP.md](PROTOTYP.md). The notebook reader and exporter remain available. The default `tasks/5_praktikum` uses one `5_praktikum.py` plus 19 curated checks; the earlier generated per-task example is preserved under `examples/exported/5_praktikum`. Both file layouts are supported by the extension. Backend hints and submissions currently support Praktikum 5 and one local demo identity.
+
+
+### Current extension improvements
+
+Targeted hints, usage metadata and plain-text normalization are implemented.
+Praktikum 5 supports per-subtask pytest runs and explicit open/missing feedback.
+The distributed test suite now needs `grader_checks.py` beside it. It executes
+selected AST definitions/dependencies locally instead of the entire module;
+see PROTOTYP.md for limitations. Partial results must never be submitted as
+whole-praktikum results. Multi-user deployment and professor-managed deadlines
+remain planned in ROADMAP.md; do not describe them as implemented.

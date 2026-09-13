@@ -105,3 +105,48 @@ Quellen: [FH-LiteLLM-Anleitung](https://confluence.fh-muenster.de/spaces/howto/p
 ## Integration auf main (13.09.2026)
 
 Version 0.3.0 führt den getesteten LiteLLM-Prototyp mit dem vorhandenen Notebook-Exporter zusammen. Neue Bearbeitungen werden unter `work/<id>/` angelegt; vorhandene Demo-Ordner direkt im Workspace werden weiterverwendet. Die Extension unterstützt sowohl `<id>.py` als auch `aufgabe_<n>.py`. Die bisherigen generierten Praktikum-5-Dateien liegen unverändert unter `examples/exported/5_praktikum/`, damit ihre 17 Tests nicht versehentlich zusätzlich zu den 19 kuratierten Tests laufen. Der js-yaml-Sicherheitsfix aus main bleibt im Paket-Lock erhalten.
+
+### Gezielter KI-Kontext und Verbrauch (September 2026)
+
+Das Backend begrenzt die Weitergabe an FH-LiteLLM auf die gewählte Teilaufgabe,
+zugehörige Definitionen/Hilfsfunktionen und passende Testfehler. Die Extension
+übermittelt ihren Code weiterhin an das eigene Backend. Bei Syntaxfehlern
+wird kein gesamter Code als Fallback weitergegeben.
+
+Unter jedem Tipp zeigt „KI-Verbrauch“ angefragtes/gemeldetes Modell,
+Deployment-ID, Tokens, Antwortdauer und verfügbare Kosten in USD. Erfolgreiche
+Antworten werden ohne Lerninhalte in `.local/hint_usage.sqlite3` erfasst.
+Fehlende Angaben erscheinen als unbekannt. Details und Grenzen stehen in
+[backend/README.md](backend/README.md).
+
+### Einzelprüfung und verständliche Fehler
+
+„Teilaufgabe prüfen“ führt für Praktikum 5 nur die Tests der gewählten
+Teilaufgabe aus. „Alle Tests ausführen“ erstellt das abgebbare Gesamtergebnis.
+Eine Einzelprüfung kann nicht als Gesamtabgabe verwendet werden. Andere
+Teilaufgaben erscheinen nach einem Einzeltest als „noch nicht geprüft“.
+
+Die aktualisierten Tests benötigen `grader_checks.py` im Aufgabenordner.
+Fehlende geforderte Namen und unveränderte Platzhalter werden als „offen“
+angezeigt; sie zählen weiterhin zum Nenner der Gesamtpunktzahl. Falsche
+Ergebnisse und Ausführungsfehler bleiben fehlgeschlagene Prüfungen und
+bekommen eine Erklärung sowie aufklappbare Originaldetails.
+
+Der lokale Testhelfer lädt pro Test benötigte Definitionen und Abhängigkeiten
+über den Python-Syntaxbaum. Unbeteiligte Beispielaufrufe werden nicht
+ausgeführt. Deshalb können offene andere Aufgaben den Test nicht durch
+Laufzeitfehler blockieren. Syntaxfehler irgendwo in der gemeinsamen Datei
+müssen jedoch vor dem Testen behoben werden. Dynamische Definitionen und
+Seiteneffekte in losgelösten Funktionsaufrufen werden nicht nachgebildet;
+der Prototyp erwartet direkt definierte Funktionen und Zuweisungen.
+
+Der Demo-Aufgabenordner hat die aktualisierten Testdateien erhalten;
+die bearbeitete `5_praktikum.py` wird beim Aktualisieren nicht überschrieben.
+
+
+### Klartextantworten
+
+Der Tutor wird zu Klartext angewiesen; das Backend bereinigt zusätzlich
+häufige Markdown- und LaTeX-Markierungen (z. B. `$0$` → `0`). Dies ist kein
+vollständiger LaTeX-Renderer. Code in Backticks bleibt inhaltlich erhalten.
+Die Änderung gilt für neu angeforderte Tipps.
