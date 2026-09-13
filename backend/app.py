@@ -56,7 +56,7 @@ def hint(payload: HintRequest, identity: str = Depends(authenticate)):
         if len(recent) >= 6:
             raise HTTPException(429, "Maximal sechs Tipps pro Minute. Bitte kurz warten.")
         hint_times[identity] = recent + [now]
-    return {"hint": get_hint(payload)}
+    return get_hint(payload)
 
 
 def submit(payload: Submission, identity: str = Depends(authenticate)):

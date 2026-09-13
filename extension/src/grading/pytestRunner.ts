@@ -7,11 +7,15 @@ import { parseJunitXml, TestCaseResult } from "./junitXml";
 
 export interface PytestRun { testcases: TestCaseResult[]; output: string; }
 
-export async function runPytest(cwd: string, pythonPath = "", token?: CancellationToken): Promise<PytestRun> {
+export async function runPytest(cwd: string, pythonPath = "", token?: CancellationToken, subtask?: string): Promise<PytestRun> {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), "notebook-grader-"));
   const report = path.join(temp, "report.xml");
   try {
     const args = ["-m", "pytest", "-q", "--tb=short", "--continue-on-collection-errors", `--junitxml=${report}`];
+    if (subtask) {
+      if (!/^(?:[1-3][a-d]|4)$/.test(subtask)) { throw new Error("Unbekannte Teilaufgabe."); }
+      args.push("-k", `test_${subtask}_`);
+    }
     let run;
     try { run = await runProcess(pythonPath || "python", args, cwd, token); }
     catch (error) {

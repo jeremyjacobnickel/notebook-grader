@@ -8,6 +8,8 @@
 export interface TestCaseResult {
   name: string;
   passed: boolean;
+  kind?: string;
+  detail?: string;
 }
 
 /**
@@ -26,7 +28,10 @@ export function parseJunitXml(xml: string): TestCaseResult[] {
     const nameMatch = attributes.match(/\bname="([^"]*)"/);
     const name = decodeXmlEntities(nameMatch ? nameMatch[1] : "");
     const failed = /<(failure|error|skipped)\b/.test(body);
-    results.push({ name, passed: !failed });
+    const issue = body.match(/<(failure|error|skipped)\b([^>]*)(?:\/>|>([\s\S]*?)<\/\1>)/);
+    const message = issue?.[2].match(/\bmessage="([^"]*)"/)?.[1] || "";
+    results.push({ name, passed: !failed, kind: issue?.[1],
+      detail: decodeXmlEntities(issue?.[3] || message) });
   }
   return results;
 }
@@ -34,6 +39,10 @@ export function parseJunitXml(xml: string): TestCaseResult[] {
 // Die fünf Standard-Entities reichen für Attributwerte von pytest.
 function decodeXmlEntities(text: string): string {
   return text
+    .replace(/&#(x[0-9a-f]+|[0-9]+);/gi, (_, value: string) => {
+      const n = value.startsWith("x") ? parseInt(value.slice(1), 16) : Number(value);
+      return n <= 0x10ffff ? String.fromCodePoint(n) : "�";
+    })
     .replace(/&lt;/g, "<")
     .replace(/&gt;/g, ">")
     .replace(/&quot;/g, '"')

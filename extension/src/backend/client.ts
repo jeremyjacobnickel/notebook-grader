@@ -10,6 +10,20 @@ export interface SubmitPayload {
   percentage: number;
 }
 
+export interface HintUsage {
+  requested_model?: string;
+  reported_model?: string | null;
+  deployment_id?: string | null;
+  input_tokens?: number | null;
+  output_tokens?: number | null;
+  total_tokens?: number | null;
+  cost_usd?: number | null;
+  duration_ms?: number;
+  recorded?: boolean;
+}
+
+export interface HintResponse { hint: string; usage?: HintUsage }
+
 export interface HintPayload {
   praktikum: string;
   code: string;
@@ -35,12 +49,12 @@ export async function postHint(
   backendUrl: string,
   courseToken: string,
   payload: HintPayload
-): Promise<string> {
+): Promise<HintResponse> {
   const response = await postJson(`${backendUrl}/hint`, courseToken, payload);
   if (typeof response.hint !== "string") {
     throw new Error("Das Backend hat keinen Tipp zurückgegeben.");
   }
-  return response.hint;
+  return {hint: response.hint, usage: response.usage as HintUsage | undefined};
 }
 
 async function postJson(

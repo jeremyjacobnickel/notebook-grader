@@ -2,18 +2,18 @@
 
 import ast
 import math
-import runpy
 from pathlib import Path
 
 import numpy as np
 import pytest
+from grader_checks import load_for_test
 
 SOURCE = Path(__file__).with_name("5_praktikum.py")
 
 
-@pytest.fixture(scope="module")
-def solution():
-    return runpy.run_path(str(SOURCE))
+@pytest.fixture(autouse=True)
+def solution(request):
+    return load_for_test(SOURCE, request.node.originalname)
 
 
 def function_node(name):
