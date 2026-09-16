@@ -2,7 +2,7 @@
   "name": "notebook-grader",
   "displayName": "Notebook Grader",
   "description": "Praktikums-ZIPs laden, Jupyter-Notebooks bearbeiten, Tests lokal ausführen und Ergebnisse ans FH-Backend abgeben.",
-  "version": "0.4.0",
+  "version": "0.3.0",
   "private": true,
   "license": "MIT",
   "engines": {
