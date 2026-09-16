@@ -1,26 +1,24 @@
-import * as fs from "fs/promises";
 import * as path from "path";
 import * as vscode from "vscode";
 import { state } from "./state";
-import { solutionFiles } from "./taskSource";
+import { extractNotebookCode, notebookFile } from "./taskSource";
 
 export function taskDirectory(): string | undefined {
   if (state.taskDir) { return state.taskDir; }
-  const file = vscode.window.activeTextEditor?.document.uri.fsPath;
-  return file?.endsWith(".py") ? path.dirname(file) : undefined;
+  const notebook = vscode.window.activeNotebookEditor?.notebook.uri.fsPath;
+  return notebook?.endsWith(".ipynb") ? path.dirname(notebook) : undefined;
 }
 
 export async function currentCode(): Promise<string> {
   const folder = taskDirectory();
-  if (!folder) { throw new Error("Bitte zuerst ein Praktikum laden oder seine Python-Datei öffnen."); }
-  const files = await solutionFiles(folder);
-  if (!files.length) { throw new Error("Keine Praktikums-Datei gefunden."); }
-  const contents = await Promise.all(files.map(async file => {
-    const document = vscode.workspace.textDocuments.find(doc => doc.uri.fsPath === file);
-    const content = document ? document.getText() : await fs.readFile(file, "utf8");
-    return files.length === 1 ? content : `# Datei: ${path.basename(file)}\n${content}`;
-  }));
-  return contents.join("\n\n");
+  if (!folder) { throw new Error("Bitte zuerst ein Praktikum laden oder sein Notebook öffnen."); }
+  const file = await notebookFile(folder);
+
+  // Offenes Notebook zuerst speichern, damit die JSON-Datei denselben Stand hat,
+  // der anschließend an pytest und den KI-Tutor geht.
+  const open = vscode.workspace.notebookDocuments.find(document => document.uri.fsPath === file);
+  if (open?.isDirty) { await open.save(); }
+  return extractNotebookCode(file);
 }
 
 export function activateTask(folder: string): void {
