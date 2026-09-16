@@ -1,178 +1,150 @@
-# Lab Submission Tool (VS Code Extension)
+# Notebook Grader / Praktikumsbegleiter
 
-A VS Code extension plus a minimal FastAPI backend for Python lab
-("Praktikum") submissions in the *Grundlagen der Programmierung* module
-at FH Münster. It replaces the previous manual upload: students load a
-task into their workspace, solve it locally in VS Code, run the tests
-with one button to see their score inline (green/red), optionally ask
-the AI tutor for a Socratic hint, and submit the result to an FH
-backend.
+VS-Code-Extension plus lokales/FH-FastAPI-Backend für Programmierpraktika an der FH Münster. Studierende bearbeiten ein Jupyter-Notebook lokal, führen bereitgestellte pytest-Tests aus, können gezielte KI-Tipps anfordern und geben später über den vorgesehenen GitLab-Workflow ab.
 
-> The repository is still named `notebook-grader` for historical
-> reasons. See `DECISIONS.md` for the pivots.
+> Der Repository-Name `notebook-grader` ist historisch. Architekturentscheidungen stehen in `DECISIONS.md`, der operative Praktikumsworkflow in `WORKFLOW.md`.
 
-## Skill level of the maintainer
+## Kanonischer Studenten-Workflow
 
-I am learning Python. I know variables, loops, and functions. I use
-simple decorators from the standard library like `@dataclass` and
-`@property`, but I do not write my own decorators, and I do not know
-metaclasses, descriptors, or async/await. Prefer simple, explicit code
-over clever abstractions. Add comments where logic is non-obvious.
+1. Der Professor stellt ein Praktikum als `.zip` bereit.
+2. Der Student öffnet einen Workspace in VS Code.
+3. **Praktikum laden** öffnet eine Dateiauswahl; der Student wählt das erhaltene ZIP.
+4. Die Extension validiert das Paket und entpackt es nach `work/<id>/`.
+5. Das enthaltene `.ipynb` wird direkt geöffnet.
+6. Aufgabenstellung und Antwortzellen befinden sich gemeinsam im Notebook.
+7. **Tests ausführen** speichert das Notebook, extrahiert getaggte Codezellen und führt die mitgelieferten pytest-Tests lokal aus.
+8. Optional kann der Student einen sokratischen KI-Tipp anfordern.
+9. Der spätere Abgabe-Workflow wird über ein lokales Git-Repository und GitLab realisiert (siehe ROADMAP/Issues).
 
-The extension is written in TypeScript, which is new to me. Keep it
-small and conventional — follow the official VS Code extension examples
-rather than clever patterns.
+## Aufgabenformat: Jupyter Notebook
 
-## Grading model
+`.ipynb` ist das einzige kanonische studentische Aufgabenformat. Eine separate `.md`-Aufgabenstellung und eine manuell bearbeitete `.py` sind nicht Teil des Zielworkflows.
 
-Pass / fail only. **Passed = at least 80 % of the tests.** There is no
-exam and no grade pressure — the focus is on learning, not on cheating
-prevention. The local test result is what counts.
+### Cell-Tags
 
-## Student workflow
+Notebook-Zellen werden über `metadata.tags` klassifiziert:
 
-1. Load a Praktikum into the workspace via the extension.
-2. Solve the tasks locally in VS Code (`5_praktikum.py` in the curated prototype, or one `aufgabe_<n>.py` per task in exported folders).
-3. Press **Run tests** → the score is shown inline, green/red.
-4. Optionally press **Hint** → a Socratic AI tip (guiding questions, not
-   a finished solution).
-5. Press **Submit** → the result is sent to the FH backend.
+- `role:prompt` — Aufgabenstellung/Erklärung
+- `role:answer` — studentisch bearbeiteter Code
+- `role:setup` — gemeinsamer Setup-/Importcode
+- `task:<id>` — Aufgabe, z. B. `task:2`
+- `part:<id>` — optionale Teilaufgabe, z. B. `part:c`
 
-## Components
+Beispiel:
 
-### Extension (client) — `extension/`
-
-TypeScript, VS Code API. Three commands — load Praktikum, run tests,
-submit — plus a sidebar panel with the current score and a hint button.
-The extension runs `python -m pytest` locally on the student's machine
-and talks to the backend with the course token. Build and run
-instructions: `extension/README.md`.
-
-### Task tooling — `grader/`
-
-The professor maintains each praktikum as a **Lösung notebook** (markdown
-per task, code cells filled in), usually alongside an Aufgaben version
-with empty code cells. The Lösung notebooks live outside the repo.
-
-`grader/notebook_reader.py` parses that format;
-`grader/task_exporter.py` turns a Lösung notebook into the folder the
-students receive:
-
-```
-tasks/<praktikum>/
-  aufgabe_<n>.py       — stub the student edits (None placeholders)
-  test_aufgabe_<n>.py  — generated pytest checks (floats via pytest.approx)
+```json
+"tags": ["role:answer", "task:2", "part:c"]
 ```
 
-Run it with
-`python -m grader.task_exporter <loesung.ipynb> tasks/<id>`
-(optionally `--aufgaben <aufgaben.ipynb>` to verify both notebooks list
-the same tasks).
+Mehrere Zellen dürfen zu derselben Task/Part gehören und räumlich getrennt sein. Die Notebook-Reihenfolge bleibt erhalten. Aufgaben gelten als atomar: Tests dürfen keinen studentischen Zustand aus vorherigen Tasks voraussetzen. Gemeinsamer `role:setup`-Code ist davon ausgenommen.
 
-Two kinds of results are checked:
+## ZIP-Paket
 
-- **Variables** holding a simple value (number, text, boolean, or a list
-  of those) that the task creates or changes — the style of Praktikum 1.
-- **Functions**: the example calls in the professor's own solution (e.g.
-  `print(factorial_iter(4))`) are executed and their results recorded as
-  test cases — the style of Praktikum 5. Calls whose arguments are
-  variables rather than fixed values cannot be replayed and are skipped,
-  which also excludes recursive calls automatically.
+Mindeststruktur:
 
-Tasks with no checkable result (text answers, graphics such as the "Vibe
-Coding" drawing) are skipped — they are graded outside the extension.
-The curated Praktikum 5 includes NumPy comparisons and structural `ast` checks. The generic exporter still uses example calls and scalar values. Plot grading and Hypothesis remain future work (see DECISIONS.md).
+```text
+manifest.json
+5_praktikum.ipynb
+test_5_praktikum.py
+```
 
-### Backend — `backend/` (local prototype)
+Optional:
 
-FastAPI, minimal. Two endpoints:
+```text
+grader_checks.py
+assets/
+```
 
-- `POST /submit` — logs the pass/fail result per student (CSV/SQLite to
-  start).
-- `POST /hint` — proxy to the existing FH AI API, with a token check,
-  rate limiting, and a system prompt that pins the AI to Socratic help
-  (guiding questions and concepts, never finished solutions). The
-  Socratic framing is enforced server-side, not trusted to the client.
+Manifest Version 1:
 
-## AI tutor role
+```json
+{
+  "version": 1,
+  "id": "5_praktikum",
+  "notebook": "5_praktikum.ipynb"
+}
+```
 
-A tutor that helps while programming — targeted hints based on the code,
-the task description, and the traceback, but never complete solutions.
-The Socratic behaviour is enforced in the `/hint` system prompt on the
-server, not in the client.
+Die Extension weist ungültige Paketversionen, fehlende Pflichtdateien und ZIP-Pfade außerhalb des Zielordners zurück. Existierende Bearbeitungen werden beim erneuten Laden nicht überschrieben.
 
-## Authentication
+## Testausführung
 
-A simple token, issued at course enrolment, is sent with every backend
-request and checked server-side. No SSO/OAuth. The token lives in `.env`
-(see `.env.example`) and is never committed.
+Vor pytest erzeugt die Extension aus allen `role:setup`- und `role:answer`-Codezellen in Notebook-Reihenfolge eine `.py` mit demselben Basisnamen wie das Notebook. Diese Datei ist ein Laufzeit-Artefakt; der Student arbeitet ausschließlich im Notebook.
 
-## Deliberately out of scope
+Die bestehenden Tests können dadurch weiterhin normale Python-Module und AST-Strukturprüfungen verwenden. Teilaufgaben sollen isoliert testbar bleiben; unfertige andere Aufgaben dürfen den Test nicht blockieren.
 
-- **No server-side re-execution / hidden tests** — the local test result
-  counts (acceptable for lab submissions).
-- **No SSO/OAuth** — a simple enrolment token is enough.
-- **No plagiarism check** (maybe later).
-- **No server-side Docker sandbox** — code runs locally on the student's
-  own machine, so there is no untrusted code on our servers.
+Bestehensmodell des aktuellen Prototyps: **mindestens 80 % der Tests bestanden**. Jeder pytest-Test entspricht einem Bewertungskriterium; mehrere Eingabefälle können innerhalb eines Tests geprüft werden, ohne dadurch stärker gewichtet zu werden.
 
-## Project conventions
+## Komponenten
 
-- Code and identifiers in English. Comments may be German.
-- One module = one clear responsibility.
-- Functions short enough to fit on one screen.
-- Prefer the standard library when possible.
-- No new dependency without a written reason in `DECISIONS.md`.
+### `extension/`
 
-## Repository layout
+TypeScript, VS Code API.
 
-- `extension/` — VS Code extension (TypeScript) — implemented; see
-  `extension/README.md`
-- `grader/`   — notebook parsing + task exporter (Python) — implemented
-- `tests/`    — pytest tests for `grader/`
-- `backend/`  — FastAPI service (`/submit`, `/hint`) — local prototype implemented
-- `tasks/`    — curated Praktikum 5 starter and 19 checks
-- `examples/exported/` — preserved examples from the generic exporter
+- ZIP auswählen und importieren
+- Notebook öffnen
+- getaggten Code extrahieren
+- pytest lokal starten
+- Score/Fehler anzeigen
+- KI-Tipps über das Backend anfordern
+- Ergebnis an Backend senden
 
-## Running tests
+### `backend/`
 
-- Python: `pytest tests/`
-- Extension: `cd extension && npm run lint && npm test`
+FastAPI-Prototyp mit `/submit` und `/hint`. Der KI-Tutor erhält nur den extrahierten Python-Code und die relevante Testausgabe, nicht die vollständige Notebook-JSON-Datei.
 
-## Important
+### `grader/`
 
-- Never commit the `.env` file. Use `.env.example` as the template.
-- Real student submissions contain personal data — they live outside
-  the repo.
-- **Never commit the professor's Lösung notebooks** — students could
-  find them. Only the Aufgaben version is committed as a test fixture.
-- The `notebookGrader.courseToken` setting is a secret: the extension
-  sends it only as an Authorization header and never logs it.
+Historische und vorbereitende Notebook-/Testwerkzeuge. Die vorhandene Exporter-Logik stammt aus der früheren `.py`-Zwischenarchitektur und darf nicht mehr als kanonischer Studentenworkflow behandelt werden. Bei Weiterentwicklung ist sie auf das in `WORKFLOW.md` beschriebene Notebook-/ZIP-Format auszurichten oder als Legacy-Werkzeug zu markieren.
 
-## Alternative / earlier direction
+### `tasks/`
 
-Before this, the project was planned as a server-side grading pipeline
-that ILIAS launches over LTI. That idea is **not deleted** — it is kept
-as a documented fallback in
-[`docs/alternatives/ilias-lti-webserver.md`](docs/alternatives/ilias-lti-webserver.md),
-with a full code snapshot on the branch `archive/ilias-lti-webserver`.
+Praktikums-/Testmaterial für Entwicklung und Verifikation. Neue Praktika müssen dem Notebook-/Manifest-Vertrag entsprechen.
 
+## Entwicklung
 
-## September 2026: integrated LiteLLM prototype
+Python:
 
-The local prototype is implemented and manually verified; see [PROTOTYP.md](PROTOTYP.md). The notebook reader and exporter remain available. The default `tasks/5_praktikum` uses one `5_praktikum.py` plus 19 curated checks; the earlier generated per-task example is preserved under `examples/exported/5_praktikum`. Both file layouts are supported by the extension. Backend hints and submissions currently support Praktikum 5 and one local demo identity.
+```bash
+pytest tests/
+```
 
+Extension:
 
-## Aktuelle Erweiterungen (September 2026)
+```bash
+cd extension
+npm ci
+npm run lint
+npm test
+```
 
-Praktikum 5 kann nun pro Teilaufgabe geprüft werden. Fehlende Definitionen
-und Platzhalter erscheinen als offen; Originalfehler sind aufklappbar.
-Für eine Abgabe ist weiterhin ein Gesamttest erforderlich. Neue KI-Tipps
-werden als Klartext ausgegeben und enthalten eine Verbrauchsanzeige.
-Das Backend reduziert den Kontext vor der Weitergabe an FH-LiteLLM und
-speichert Verbrauchsmetadaten ohne Lerninhalte. Details und Grenzen:
-[PROTOTYP.md](PROTOTYP.md), [Backend](backend/README.md).
+Änderungen auf Feature-Branches, nicht direkt auf `main`. Neue Dependencies nur mit dokumentierter Begründung in `DECISIONS.md`.
 
-Kursbetrieb für etwa 100 Studierende, persönliche Zugänge und vom Professor
-verwaltete Deadlines sind als nächste Ausbaustufe in [ROADMAP.md](ROADMAP.md)
-beschrieben; diese Funktionen sind noch nicht implementiert.
+## Projektkonventionen
+
+- Code und Identifier auf Englisch; Kommentare dürfen Deutsch sein.
+- Ein Modul = eine klare Verantwortung.
+- Standardbibliothek bevorzugen.
+- Einfache, explizite Implementierungen statt unnötiger Abstraktionen.
+- Anforderungen und Formatänderungen im Repository dokumentieren, nicht nur in Chats.
+
+## Dateien/Daten, die nie committed werden dürfen
+
+- `.env`
+- echte Tokens/Secrets
+- reale Studentendaten oder Abgaben
+- Musterlösungs-Notebooks des Professors
+
+Das Aufgaben-Notebook im verteilten Paket enthält nur Aufgabenstellung, Setup und leere/Starter-Antwortzellen.
+
+## KI-Tutor
+
+Der Tutor soll gezielt helfen, aber keine fertigen Lösungen liefern. Die sokratische Systemanweisung wird serverseitig erzwungen. Für `/hint` werden nur die benötigten studentischen Codeanteile übertragen. Datenschutz und zulässige Speicherung von KI-Metadaten müssen vor Produktivbetrieb abschließend geklärt werden.
+
+## GitLab / Abgabe
+
+Geplant ist ein lokales Git-Repository pro Praktikumsbearbeitung mit regelmäßigen Auto-Commits. Eine verbindliche Abgabe erfolgt später explizit per Push auf ein konfiguriertes GitLab-Ziel. Tool-Quellcode und studentische Abgabe-Repositories bleiben strikt getrennt. Details werden in den entsprechenden GitHub-Issues umgesetzt.
+
+## Frühere Architektur
+
+Der frühere LTI/ILIAS-Webserver-Ansatz bleibt unter `docs/alternatives/` dokumentiert. Ebenso können ältere `.py`-Exporter-Beispiele zu Regressions-/Historienzwecken erhalten bleiben; sie sind jedoch nicht mehr der aktuelle Studentenworkflow.
