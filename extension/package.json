@@ -1,8 +1,8 @@
 {
   "name": "notebook-grader",
   "displayName": "Notebook Grader",
-  "description": "Praktika laden, Tests lokal ausführen und das Ergebnis ans FH-Backend abgeben.",
-  "version": "0.3.0",
+  "description": "Praktikums-ZIPs laden, Jupyter-Notebooks bearbeiten, Tests lokal ausführen und Ergebnisse ans FH-Backend abgeben.",
+  "version": "0.4.0",
   "private": true,
   "license": "MIT",
   "engines": {
@@ -37,7 +37,7 @@
       {
         "command": "notebookGrader.showAssignment",
         "category": "Notebook Grader",
-        "title": "Aufgabenstellung öffnen"
+        "title": "Aufgaben-Notebook öffnen"
       },
       {
         "command": "notebookGrader.showOutput",
@@ -71,11 +71,6 @@
           "type": "string",
           "default": "",
           "description": "Kurs-Token für die Anmeldung am Backend. Wird bei jeder Anfrage mitgeschickt."
-        },
-        "notebookGrader.tasksSource": {
-          "type": "string",
-          "default": "",
-          "description": "Ordner mit den Praktikums-Aufgaben. Leer = Ordner 'tasks' im geöffneten Workspace. Relative Pfade beziehen sich auf den Workspace."
         },
         "notebookGrader.pythonPath": {
           "type": "string",
