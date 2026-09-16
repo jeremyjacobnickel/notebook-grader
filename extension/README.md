@@ -1,83 +1,108 @@
 # Notebook Grader — VS-Code-Extension
 
-Die Studierenden-Seite des Notebook Graders: Praktikum laden, pytest
-lokal ausführen, Punktestand sehen, KI-Tipp holen, Ergebnis abgeben.
-Bestanden = mindestens 80 % der Punkte.
+Die Studierenden-Seite des Notebook Graders: Praktikums-ZIP laden, das
+Jupyter-Notebook bearbeiten, pytest lokal ausführen, Punktestand sehen,
+KI-Tipp holen und Ergebnis abgeben. Bestanden = mindestens 80 % der Punkte.
 
 ## Voraussetzungen
 
 - VS Code ≥ 1.90
+- Jupyter-Unterstützung in VS Code für `.ipynb`
 - Node.js ≥ 18 (zum Bauen)
-- Python mit pytest (`pip install pytest`) — zum Ausführen der Tests
+- Python mit pytest und den für das Praktikum benötigten Paketen
 
-## Prototyp für Praktikum 5
+## Kanonisches Praktikumsformat
 
-Vollständige Einrichtung: [PROTOTYP.md](../PROTOTYP.md). Der Prototyp bietet Aufgabenbeschreibung, 19 Prüfungen, FH-LiteLLM-Tipps und lokale Abgaben. `notebookGrader.pythonPath` legt den Interpreter mit NumPy und pytest fest.
+Studierende erhalten vom Professor genau ein `.zip`-Paket. Es enthält
+mindestens:
+
+```text
+manifest.json
+5_praktikum.ipynb
+test_5_praktikum.py
+grader_checks.py        # optional, falls die Tests es benötigen
+assets/                 # optional
+```
+
+`manifest.json` Version 1:
+
+```json
+{
+  "version": 1,
+  "id": "5_praktikum",
+  "notebook": "5_praktikum.ipynb"
+}
+```
+
+Die `.ipynb` ist die einzige studentische Arbeitsdatei. Aufgabenstellung und
+Antwortzellen liegen gemeinsam im Notebook. Die Extension akzeptiert folgende
+Cell-Tags:
+
+- `role:prompt` — Aufgaben-/Erklärungstext, nicht ausführbar
+- `role:answer` — studentischer Code, wird für Tests extrahiert
+- `role:setup` — gemeinsamer Setup-/Importcode, wird vor Antwortcode ausgeführt
+- `task:<id>` — Aufgabenzuordnung, z. B. `task:2`
+- `part:<id>` — optionale Teilaufgabe, z. B. `part:c`
+
+Mehrere räumlich getrennte `role:answer`-Zellen dürfen dieselben `task`-/`part`-
+Tags tragen. Beim Testlauf werden alle `role:setup`- und `role:answer`-Zellen in
+Notebook-Reihenfolge in eine generierte `.py` mit demselben Basisnamen geschrieben.
+pytest arbeitet auf dieser Datei. Markdown- und ungetaggte Codezellen werden nicht
+als Abgabecode ausgeführt.
+
+## Praktikum laden
+
+1. Workspace-Ordner in VS Code öffnen.
+2. `Notebook Grader: Praktikum laden` ausführen.
+3. Das vom Professor bereitgestellte `.zip` auswählen.
+4. Die Extension validiert Paket, Manifest und Notebook und entpackt nach
+   `work/<id>/`.
+5. Das Notebook wird direkt geöffnet.
+
+Existiert `work/<id>/` bereits, wird die vorhandene Bearbeitung niemals still
+überschrieben. Der Student kann stattdessen den vorhandenen Stand öffnen.
 
 ## Bauen und starten
 
 ```bash
 cd extension
 npm install
-npm run compile   # TypeScript bauen
-npm run lint      # ESLint
-npm test          # Unit-Tests (reine Score-/XML-Logik, node:test)
+npm run compile
+npm run lint
+npm test
 ```
 
-Zum Ausprobieren: den Ordner `extension/` in VS Code öffnen und mit
-**F5** den Extension Development Host starten. Dort einen Workspace
-öffnen und die Einstellung `notebookGrader.tasksSource` auf den
-mitgelieferten Beispiel-Ordner zeigen lassen
-(`<repo>/extension/fixtures/tasks`) — oder einen eigenen `tasks/`-Ordner
-im Workspace anlegen.
+Zum Ausprobieren den Ordner `extension/` in VS Code öffnen und mit **F5** den
+Extension Development Host starten. Dort einen Workspace öffnen und ein gültiges
+Praktikums-ZIP über `Praktikum laden` auswählen.
 
-## Commands (Befehlspalette)
+## Commands
 
 | Command | Zweck |
 |---|---|
-| `Notebook Grader: Praktikum laden` | Aufgabe aus `tasksSource` wählen, nach `work/<id>/` kopieren, `<id>.py` öffnen |
-| `Notebook Grader: Tests ausführen` | `python -m pytest --junitxml=…` im Task-Ordner, Ergebnis in Sidebar + StatusBar |
-| `Notebook Grader: Ergebnis abgeben` | Schickt das letzte Ergebnis an `POST {backendUrl}/submit` |
-| `Notebook Grader: KI-Tipp holen` | Schickt Code + letzte Fehlerausgabe an `POST {backendUrl}/hint`, zeigt den Tipp in der Sidebar |
-
-Die Sidebar (Aktivitätsleiste → „Notebook Grader") zeigt Punktestand,
-Bestanden-Status und den „Tipp holen"-Button.
+| `Notebook Grader: Praktikum laden` | ZIP auswählen, validieren, nach `work/<id>/` entpacken und `.ipynb` öffnen |
+| `Notebook Grader: Tests ausführen` | Notebook speichern, getaggten Code extrahieren, `python -m pytest` ausführen |
+| `Notebook Grader: Aufgaben-Notebook öffnen` | aktuelle `.ipynb` öffnen |
+| `Notebook Grader: Ergebnis abgeben` | letztes Gesamtergebnis an das Backend senden |
+| `Notebook Grader: KI-Tipp holen` | extrahierten Antwortcode + letzte Fehlerausgabe an `/hint` senden |
 
 ## Einstellungen
 
 | Einstellung | Bedeutung |
 |---|---|
 | `notebookGrader.backendUrl` | Basis-URL des FH-Backends |
-| `notebookGrader.courseToken` | Kurs-Token; wird als `Authorization: Bearer …` mitgeschickt, nie geloggt |
-| `notebookGrader.tasksSource` | Ordner mit den Aufgaben (ein Unterordner pro Aufgabe); leer = `tasks/` im Workspace |
+| `notebookGrader.courseToken` | Kurs-Token; nur als Authorization-Header, nie loggen |
+| `notebookGrader.pythonPath` | Python-Interpreter für pytest |
 
-## Backend-Contracts (Client-Sicht)
+## Sicherheit des ZIP-Imports
 
-Beide Requests: `Authorization: Bearer <courseToken>`,
-`Content-Type: application/json`.
+Der Import akzeptiert normale ZIP-Einträge mit `stored` oder `deflate`. Absolute
+Pfade und Einträge, die mit `..` aus dem Zielordner ausbrechen würden, werden
+abgewiesen. Ein Paket muss ein Manifest Version 1, das referenzierte `.ipynb` und
+mindestens eine `test_*.py` enthalten.
 
-```
-POST {backendUrl}/submit
-  → { "praktikum": "beispiel", "passed": true, "score": 6, "total": 7, "percentage": 85.7 }
-  ← { "ok": true }
+## Backend-Contracts
 
-POST {backendUrl}/hint
-  → { "praktikum": "beispiel", "code": "<Inhalt der .py-Datei>", "traceback": "<pytest-Ausgabe oder ''>" }
-  ← { "hint": "..." }
-```
-
-## Aufbau
-
-```
-src/
-  extension.ts            Einstieg: Commands, Sidebar, StatusBar registrieren
-  config.ts               Einstellungen lesen (Token nie loggen)
-  state.ts                gemeinsamer Zustand (Praktikum, Score, Traceback)
-  statusBar.ts            StatusBar-Item (grün/rot)
-  commands/               je Command eine Datei
-  grading/                pytest-Runner + reine Score-/JUnit-Logik (unit-getestet)
-  backend/client.ts       fetch-Aufrufe für /submit und /hint
-  sidebar/                WebviewViewProvider (Punktestand + Tipp-Button)
-  test/                   Unit-Tests (node --test)
-fixtures/tasks/beispiel/  Mini-Aufgabe zum manuellen Durchspielen
-```
+Der KI-Tutor erhält nicht die Notebook-JSON-Datei, sondern nur den aus
+`role:setup` und `role:answer` extrahierten Python-Code. Damit werden Aufgaben-
+Markdown, Notebook-Ausgaben und sonstige Metadaten nicht unnötig übertragen.
