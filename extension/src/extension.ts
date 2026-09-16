@@ -10,12 +10,18 @@ import { ScoreViewProvider } from "./sidebar/scoreViewProvider";
 import { createStatusBarItem } from "./statusBar";
 import * as path from "path";
 import { taskDirectory } from "./currentTask";
+import { notebookFile } from "./taskSource";
 import { state } from "./state";
 import { output } from "./output";
 
 export function activate(context: vscode.ExtensionContext): void {
   const sidebar = new ScoreViewProvider();
   const statusBarItem = createStatusBarItem();
+
+  const markChanged = (): void => {
+    state.lastResult = undefined; state.lastSource = undefined; state.lastTraceback = "";
+    sidebar.reset("Code geändert – bitte erneut testen."); statusBarItem.hide();
+  };
 
   context.subscriptions.push(
     statusBarItem, output,
@@ -48,17 +54,18 @@ export function activate(context: vscode.ExtensionContext): void {
     vscode.commands.registerCommand("notebookGrader.showAssignment", async () => {
       const folder = taskDirectory();
       if (!folder) { vscode.window.showErrorMessage("Bitte zuerst ein Praktikum laden."); return; }
-      try { await vscode.commands.executeCommand("markdown.showPreview", vscode.Uri.file(path.join(folder, "AUFGABEN.md"))); }
-      catch { vscode.window.showErrorMessage("Keine Aufgabenbeschreibung gefunden."); }
+      try {
+        const document = await vscode.workspace.openNotebookDocument(vscode.Uri.file(await notebookFile(folder)));
+        await vscode.window.showNotebookDocument(document);
+      } catch { vscode.window.showErrorMessage("Kein Aufgaben-Notebook gefunden."); }
     }),
-    vscode.workspace.onDidChangeTextDocument(event => {
-      if (state.taskDir && event.document.uri.fsPath.startsWith(state.taskDir + path.sep) && !state.busy) {
-        state.lastResult = undefined; state.lastSource = undefined; state.lastTraceback = "";
-        sidebar.reset("Code geändert – bitte erneut testen."); statusBarItem.hide();
+    vscode.workspace.onDidChangeNotebookDocument(event => {
+      if (state.taskDir && event.notebook.uri.fsPath.startsWith(state.taskDir + path.sep) && !state.busy) {
+        markChanged();
       }
     }),
-    // hint steht nicht in der Command-Palette (package.json), sondern
-    // wird vom Tipp-Button in der Sidebar ausgelöst.
+    // Textdateien im Paket (z. B. Tests) sind keine studentische Arbeitsoberfläche.
+    // Die generierte .py wird während state.busy geschrieben und löst daher kein Reset aus.
     vscode.commands.registerCommand("notebookGrader.hint", () =>
       hint(sidebar)
     )
