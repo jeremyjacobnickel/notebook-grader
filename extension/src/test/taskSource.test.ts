@@ -3,29 +3,50 @@ import * as assert from "node:assert/strict";
 import * as fs from "fs/promises";
 import * as os from "os";
 import * as path from "path";
-import { copyTask, solutionFiles } from "../taskSource";
+import { extractNotebookCode, notebookFile, readManifest } from "../taskSource";
 
-test("Exporter-Aufgaben werden numerisch sortiert und Tests ausgeschlossen", async () => {
-  const temp = await fs.mkdtemp(path.join(os.tmpdir(), "grader-layout-"));
+async function fixture(): Promise<string> {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), "grader-notebook-"));
+  await fs.writeFile(path.join(temp, "manifest.json"), JSON.stringify({
+    version: 1, id: "5_praktikum", notebook: "5_praktikum.ipynb"
+  }));
+  await fs.writeFile(path.join(temp, "5_praktikum.ipynb"), JSON.stringify({
+    cells: [
+      {cell_type: "markdown", metadata: {tags: ["role:prompt", "task:1", "part:a"]}, source: ["Aufgabe 1a"]},
+      {cell_type: "code", metadata: {tags: ["role:setup"]}, source: ["import numpy as np\n"]},
+      {cell_type: "code", metadata: {tags: ["role:answer", "task:1", "part:a"]}, source: ["def answer():\n", "    return 42\n"]},
+      {cell_type: "code", metadata: {tags: ["role:scratch"]}, source: ["raise RuntimeError('nicht ausführen')\n"]},
+      {cell_type: "markdown", metadata: {}, source: ["Erklärung"]}
+    ], metadata: {}, nbformat: 4, nbformat_minor: 5
+  }));
+  return temp;
+}
+
+test("nur setup- und answer-Codezellen werden extrahiert", async () => {
+  const temp = await fixture();
   try {
-    for (const name of ["aufgabe_10.py", "aufgabe_2.py", "test_aufgabe_2.py"]) {
-      await fs.writeFile(path.join(temp, name), "");
-    }
-    assert.deepEqual((await solutionFiles(temp)).map(file => path.basename(file)), ["aufgabe_2.py", "aufgabe_10.py"]);
-    await fs.writeFile(path.join(temp, `${path.basename(temp)}.py`), "");
-    assert.equal((await solutionFiles(temp)).length, 1);
-    assert.equal(path.basename((await solutionFiles(temp))[0]), `${path.basename(temp)}.py`);
+    const code = await extractNotebookCode(path.join(temp, "5_praktikum.ipynb"));
+    assert.match(code, /import numpy as np/);
+    assert.match(code, /def answer/);
+    assert.doesNotMatch(code, /RuntimeError/);
+    assert.match(code, /role:answer, task:1, part:a/);
   } finally { await fs.rm(temp, {recursive: true, force: true}); }
 });
 
-test("erneutes Kopieren überschreibt keine Bearbeitung", async () => {
-  const temp = await fs.mkdtemp(path.join(os.tmpdir(), "grader-copy-"));
+test("manifest legt genau das kanonische Notebook fest", async () => {
+  const temp = await fixture();
   try {
-    await fs.mkdir(path.join(temp, "source", "task"), {recursive: true});
-    await fs.writeFile(path.join(temp, "source", "task", "task.py"), "starter");
-    await copyTask(path.join(temp, "source"), "task", path.join(temp, "target"));
-    await fs.writeFile(path.join(temp, "target", "task.py"), "student work");
-    await assert.rejects(copyTask(path.join(temp, "source"), "task", path.join(temp, "target")));
-    assert.equal(await fs.readFile(path.join(temp, "target", "task.py"), "utf8"), "student work");
+    assert.equal((await readManifest(temp)).id, "5_praktikum");
+    assert.equal(path.basename(await notebookFile(temp)), "5_praktikum.ipynb");
+  } finally { await fs.rm(temp, {recursive: true, force: true}); }
+});
+
+test("ungültige Manifest-Pfade werden abgewiesen", async () => {
+  const temp = await fs.mkdtemp(path.join(os.tmpdir(), "grader-manifest-"));
+  try {
+    await fs.writeFile(path.join(temp, "manifest.json"), JSON.stringify({
+      version: 1, id: "task", notebook: "../outside.ipynb"
+    }));
+    await assert.rejects(notebookFile(temp));
   } finally { await fs.rm(temp, {recursive: true, force: true}); }
 });

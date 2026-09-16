@@ -1,83 +1,66 @@
-// Command: Praktikum aus der Aufgaben-Quelle in den Workspace laden.
+// Command: Praktikums-ZIP auswählen, validieren und als Notebook-Arbeitsstand laden.
 
 import * as path from "path";
 import * as fs from "fs/promises";
 import * as vscode from "vscode";
-import { getConfig } from "../config";
 import { state } from "../state";
-import { copyTask, listTaskIds, solutionFiles } from "../taskSource";
+import { extractPackage, notebookFile, readManifest } from "../taskSource";
 
 export async function loadPraktikum(): Promise<void> {
   if (state.busy) { return; }
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
   if (!workspaceFolder) {
     vscode.window.showErrorMessage(
-      "Bitte öffne zuerst einen Ordner (Datei → Ordner öffnen), " +
-        "in den das Praktikum geladen werden soll."
-    );
-    return;
-  }
-  const workspaceRoot = workspaceFolder.uri.fsPath;
-
-  // Quelle: Einstellung, sonst der tasks/-Ordner im Workspace.
-  // Relative Pfade beziehen sich auf den Workspace.
-  const configured = getConfig().tasksSource;
-  const sourceDir = configured
-    ? path.resolve(workspaceRoot, configured)
-    : path.join(workspaceRoot, "tasks");
-
-  let taskIds: string[];
-  try {
-    taskIds = await listTaskIds(sourceDir);
-  } catch {
-    vscode.window.showErrorMessage(
-      `Der Aufgaben-Ordner wurde nicht gefunden: ${sourceDir}. ` +
-        "Prüfe die Einstellung notebookGrader.tasksSource."
-    );
-    return;
-  }
-  if (taskIds.length === 0) {
-    vscode.window.showWarningMessage(
-      `Im Aufgaben-Ordner liegen keine Praktika: ${sourceDir}`
+      "Bitte öffne zuerst einen Ordner (Datei → Ordner öffnen), in dem deine Praktika gespeichert werden sollen."
     );
     return;
   }
 
-  const id = await vscode.window.showQuickPick(taskIds, {
-    placeHolder: "Welches Praktikum möchtest du laden?",
+  const selected = await vscode.window.showOpenDialog({
+    canSelectFiles: true,
+    canSelectFolders: false,
+    canSelectMany: false,
+    filters: { "Praktikums-Paket": ["zip"] },
+    openLabel: "Praktikum laden",
+    title: "Praktikums-ZIP auswählen",
   });
-  if (!id) {
-    return; // abgebrochen
-  }
+  if (!selected?.length) { return; }
 
-  const legacyDir = path.join(workspaceRoot, id);
-  const targetDir = await fs.stat(legacyDir).then(() => legacyDir, () => path.join(workspaceRoot, "work", id));
+  const workspaceRoot = workspaceFolder.uri.fsPath;
+  const workRoot = path.join(workspaceRoot, "work");
+  const stagingDir = path.join(workRoot, `.import-${Date.now()}`);
+
   try {
+    await fs.mkdir(workRoot, { recursive: true });
+    await extractPackage(selected[0].fsPath, stagingDir);
+    const manifest = await readManifest(stagingDir);
+    const targetDir = path.join(workRoot, manifest.id);
     const exists = await fs.stat(targetDir).then(() => true, () => false);
-    // Vorhandene Bearbeitungen nur wieder öffnen, niemals mit dem Starter ersetzen.
-    if (!exists) { await copyTask(sourceDir, id, targetDir); }
+
+    if (exists) {
+      await fs.rm(stagingDir, { recursive: true, force: true });
+      const choice = await vscode.window.showWarningMessage(
+        `Praktikum ${manifest.id} ist bereits geladen. Die vorhandene Bearbeitung wird nicht überschrieben.`,
+        "Vorhandenes öffnen"
+      );
+      if (choice !== "Vorhandenes öffnen") { return; }
+    } else {
+      await fs.rename(stagingDir, targetDir);
+    }
+
+    state.praktikumId = manifest.id;
+    state.taskDir = targetDir;
+    state.lastResult = undefined;
+    state.lastTraceback = "";
+    state.lastSource = undefined;
+
+    const notebook = await notebookFile(targetDir);
+    const document = await vscode.workspace.openNotebookDocument(vscode.Uri.file(notebook));
+    await vscode.window.showNotebookDocument(document);
   } catch (error) {
+    await fs.rm(stagingDir, { recursive: true, force: true }).catch(() => undefined);
     vscode.window.showErrorMessage(
-      `Das Praktikum konnte nicht kopiert werden: ${(error as Error).message}`
-    );
-    return;
-  }
-
-  // Neues Praktikum = alter Punktestand und Traceback sind hinfällig.
-  state.praktikumId = id;
-  state.taskDir = targetDir;
-  state.lastResult = undefined;
-  state.lastTraceback = "";
-  state.lastSource = undefined;
-
-  try {
-    const files = await solutionFiles(targetDir);
-    if (!files.length) { throw new Error("Keine Aufgaben-Datei gefunden"); }
-    const mainFile = vscode.Uri.file(files[0]);
-    await vscode.window.showTextDocument(mainFile);
-  } catch {
-    vscode.window.showWarningMessage(
-      `Das Praktikum wurde geladen, aber ${id}.py bzw. aufgabe_*.py wurde darin nicht gefunden.`
+      `Das Praktikum konnte nicht geladen werden: ${(error as Error).message}`
     );
   }
 }
