@@ -7,12 +7,13 @@ import { output } from "../output";
 import { ScoreViewProvider } from "../sidebar/scoreViewProvider";
 import { updateStatusBarItem } from "../statusBar";
 import { state } from "../state";
+import { materializeNotebookCode } from "../taskSource";
 
 export async function runTests(sidebar: ScoreViewProvider, statusBar: vscode.StatusBarItem, subtask?: string): Promise<void> {
   if (state.busy) { return; }
   const folder = taskDirectory();
   if (!folder) {
-    vscode.window.showErrorMessage("Bitte zuerst ein Praktikum laden oder seine Python-Datei öffnen.");
+    vscode.window.showErrorMessage("Bitte zuerst ein Praktikum laden oder sein Notebook öffnen.");
     return;
   }
   activateTask(folder);
@@ -26,6 +27,7 @@ export async function runTests(sidebar: ScoreViewProvider, statusBar: vscode.Sta
   try {
     if (!await vscode.workspace.saveAll(false)) { throw new Error("Bitte Änderungen speichern und erneut testen."); }
     source = await currentCode();
+    await materializeNotebookCode(folder);
     const run = await vscode.window.withProgress({location: vscode.ProgressLocation.Notification,
       title: "Praktikum wird getestet", cancellable: true}, (_, token) =>
       runPytest(folder, getConfig().pythonPath, token, subtask));
@@ -40,7 +42,6 @@ export async function runTests(sidebar: ScoreViewProvider, statusBar: vscode.Sta
     if (!subtask) { updateStatusBarItem(statusBar, result); }
   } catch (error) {
     state.lastTraceback = (error as Error).message.slice(-16000);
-    // Auch Syntax-/Importfehler gehören zum aktuellen Versuch und helfen dem Tutor.
     if (source !== undefined && source === await currentCode().catch(() => undefined)) {
       state.lastSource = source;
     }
