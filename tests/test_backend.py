@@ -23,7 +23,7 @@ RESULT = {"praktikum": "5_praktikum", "passed": True, "score": 16, "total": 19, 
 
 def test_authentication_required(client):
     assert client.post("/submit", json=RESULT).status_code == 401
-    assert client.post("/hint", json={"praktikum": "5_praktikum", "code": "", "task": "1a"}).status_code == 401
+    assert client.post("/hint", json={"praktikum": "5_praktikum", "code": "", "task": "1", "part": "a"}).status_code == 401
 
 
 def test_submission_persists(client):
@@ -40,15 +40,22 @@ def test_inconsistent_and_unknown_submissions_rejected(client):
     assert client.post("/submit", headers=AUTH, json={**RESULT, "passed": False}).status_code == 422
     assert client.post("/submit", headers=AUTH, json={**RESULT, "praktikum": "../../etc"}).status_code == 422
     assert client.post("/submit", headers=AUTH, json={**RESULT, "total": 0}).status_code == 422
+    assert client.post("/submit", headers=AUTH, json={**RESULT, "praktikum": "unpublished"}).status_code == 422
+
+
+def test_hint_rejects_invalid_task_ids(client):
+    for task in ({"task": "1 a"}, {"task": ""}, {"task": "1", "part": "../x"}):
+        body = {"praktikum": "5_praktikum", "code": "", **task}
+        assert client.post("/hint", headers=AUTH, json=body).status_code == 422
 
 
 def test_hint_context_and_rate_limit(client, monkeypatch):
     seen = []
     monkeypatch.setattr(backend, "get_hint", lambda payload: seen.append(payload) or {"hint": "Prüfe den Basisfall."})
-    payload = {"praktikum": "5_praktikum", "task": "1b", "question": "Warum?", "code": "def factorial_rec(n): pass"}
+    payload = {"praktikum": "5_praktikum", "task": "1", "part": "b", "question": "Warum?", "code": "def factorial_rec(n): pass"}
     for _ in range(6):
         assert client.post("/hint", headers=AUTH, json=payload).status_code == 200
-    assert seen[0].task == "1b"
+    assert (seen[0].task, seen[0].part) == ("1", "b")
     assert client.post("/hint", headers=AUTH, json=payload).status_code == 429
 
 
@@ -58,7 +65,7 @@ def test_oversized_hint_rejected(client):
 
 def test_missing_key_is_explicit(client, monkeypatch):
     monkeypatch.setattr(tutor, "settings", lambda: {})
-    response = client.post("/hint", headers=AUTH, json={"praktikum": "5_praktikum", "code": "", "task": "1a"})
+    response = client.post("/hint", headers=AUTH, json={"praktikum": "5_praktikum", "code": "", "task": "1", "part": "a"})
     assert response.status_code == 503
     assert "Schlüssel" in response.json()["detail"]
 
@@ -69,7 +76,7 @@ def test_upstream_errors(client, monkeypatch, status, expected):
     transport = httpx.MockTransport(lambda request: httpx.Response(status, json={"secret": "never show"}))
     monkeypatch.setattr(tutor, "settings", lambda: {"LITELLM_API_KEY": "secret", "HINT_USAGE_DB": backend.settings()["SUBMISSIONS_DB"]})
     monkeypatch.setattr(tutor.httpx, "Client", lambda **kwargs: original(transport=transport, **kwargs))
-    response = client.post("/hint", headers=AUTH, json={"praktikum": "5_praktikum", "code": "", "task": "1a"})
+    response = client.post("/hint", headers=AUTH, json={"praktikum": "5_praktikum", "code": "", "task": "1", "part": "a"})
     assert response.status_code == expected
     assert "secret" not in response.text
 
@@ -82,7 +89,7 @@ def test_real_request_format(client, monkeypatch):
         return httpx.Response(200, json={"choices": [{"message": {"content": "Welcher Basisfall fehlt?"}}]})
     monkeypatch.setattr(tutor, "settings", lambda: {"LITELLM_API_KEY": "secret", "HINT_USAGE_DB": backend.settings()["SUBMISSIONS_DB"]})
     monkeypatch.setattr(tutor.httpx, "Client", lambda **kwargs: original(transport=httpx.MockTransport(respond), **kwargs))
-    response = client.post("/hint", headers=AUTH, json={"praktikum": "5_praktikum", "code": "pass", "task": "1a"})
+    response = client.post("/hint", headers=AUTH, json={"praktikum": "5_praktikum", "code": "pass", "task": "1", "part": "a"})
     assert response.json()["hint"] == "Welcher Basisfall fehlt?"
     assert str(seen[0].url) == "https://litellm.fh-muenster.de/v1/chat/completions"
     assert seen[0].headers["Authorization"] == "Bearer secret"
@@ -104,13 +111,13 @@ def test_hint_filters_upstream_and_records_metadata(client, monkeypatch):
     monkeypatch.setattr(tutor, 'settings', lambda: {'LITELLM_API_KEY': 'secret', 'HINT_USAGE_DB': path})
     monkeypatch.setattr(tutor.httpx, 'Client', lambda **kwargs: original(transport=httpx.MockTransport(respond), **kwargs))
     response = client.post('/hint', headers=AUTH, json={
-        'praktikum': '5_praktikum', 'task': '1a – Fakultät iterativ',
-        'code': 'def factorial_iter(n): return n\ndef echo_word(word): return "private-unrelated"',
+        'praktikum': '5_praktikum', 'task': '1', 'part': 'a',
+        'code': 'def factorial_iter(n): return n',
         'question': 'my-private-question',
     })
     assert response.status_code == 200
     prompt = seen[0]['messages'][1]['content']
-    assert 'factorial_iter' in prompt and 'echo_word' not in prompt
+    assert 'Iterative' in prompt and 'factorial_rec' not in prompt and 'Insertion' not in prompt
     usage = response.json()['usage']
     assert usage['cost_usd'] == 0.0002 and usage['total_tokens'] == 120 and usage['recorded']
     with sqlite3.connect(path) as db:
@@ -127,6 +134,6 @@ def test_usage_storage_failure_keeps_hint(client, monkeypatch):
     def fail(*args):
         raise sqlite3.OperationalError('disk full')
     monkeypatch.setattr(tutor, 'save_usage', fail)
-    response = client.post('/hint', headers=AUTH, json={'praktikum': '5_praktikum', 'task': '1a', 'code': ''})
+    response = client.post('/hint', headers=AUTH, json={'praktikum': '5_praktikum', 'task': '1', 'part': 'a', 'code': ''})
     assert response.json()['hint'] == 'Ein Hinweis'
     assert response.json()['usage']['recorded'] is False

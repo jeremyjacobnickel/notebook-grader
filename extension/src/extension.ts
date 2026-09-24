@@ -1,10 +1,10 @@
 // Einstiegspunkt: registriert die Commands, die Sidebar und das StatusBar-Item.
 
 import * as vscode from "vscode";
-import { subtasks } from "./grading/feedback";
 import { hint } from "./commands/hint";
 import { loadPraktikum } from "./commands/loadPraktikum";
 import { runTests } from "./commands/runTests";
+import { pickNotebookTask } from "./commands/pickTask";
 import { submit } from "./commands/submit";
 import { ScoreViewProvider } from "./sidebar/scoreViewProvider";
 import { createStatusBarItem } from "./statusBar";
@@ -42,12 +42,10 @@ export function activate(context: vscode.ExtensionContext): void {
     ),
     vscode.commands.registerCommand("notebookGrader.testSubtask", async () => {
       if (state.busy) { return; }
-      const folder = taskDirectory();
-      if (!folder || path.basename(folder) !== "5_praktikum") {
-        vscode.window.showInformationMessage("Einzelprüfung ist derzeit für Praktikum 5 verfügbar."); return;
-      }
-      const task = await vscode.window.showQuickPick(subtasks, {placeHolder: "Welche Teilaufgabe möchtest du prüfen?"});
-      if (task) { await runTests(sidebar, statusBarItem, task); }
+      try {
+        const picked = await pickNotebookTask("Welche Teilaufgabe möchtest du prüfen?");
+        if (picked) { await runTests(sidebar, statusBarItem, picked.task.id); }
+      } catch (error) { vscode.window.showErrorMessage((error as Error).message); }
     }),
     vscode.commands.registerCommand("notebookGrader.submit", submit),
     vscode.commands.registerCommand("notebookGrader.showOutput", () => output.show()),

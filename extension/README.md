@@ -103,6 +103,12 @@ mindestens eine `test_*.py` enthalten.
 
 ## Backend-Contracts
 
-Der KI-Tutor erhält nicht die Notebook-JSON-Datei, sondern nur den aus
-`role:setup` und `role:answer` extrahierten Python-Code. Damit werden Aufgaben-
-Markdown, Notebook-Ausgaben und sonstige Metadaten nicht unnötig übertragen.
+Aufgaben und Teilaufgaben für „Teilaufgabe prüfen“ und „KI-Tipp holen“ stammen
+aus den `task`-/`part`-Tags des Notebooks (`src/notebook.ts`); Testnamen folgen
+`test_<task><part>_…` (siehe `WORKFLOW.md`).
+
+`POST /hint` erhält `praktikum`, `task`, `part`, `question`, `traceback` und `code`.
+`code` enthält nicht die Notebook-JSON-Datei, sondern nur `role:setup`-Code und
+die Antwortzellen der gewählten Task bis einschließlich der gewählten
+Teilaufgabe. Aufgaben-Markdown, Notebook-Ausgaben, andere Tasks und sonstige
+Metadaten werden nicht übertragen.

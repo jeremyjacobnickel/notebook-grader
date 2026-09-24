@@ -10,7 +10,8 @@ aus dem Projektstamm. Einrichtung und Vorführung: [PROTOTYP.md](../PROTOTYP.md)
 - `POST /submit`: Konsistente Punktestände in `.local/submissions.sqlite3`
   speichern. Antwort: `{"ok": true, "submission_id": 1}`.
 
-Unterstütztes Praktikum: `5_praktikum`. Ein Kurs-Token entspricht im lokalen
+Unterstützt werden alle Praktika, deren Paket unter `tasks/<id>/` liegt
+(`manifest.json` + Notebook). Ein Kurs-Token entspricht im lokalen
 Prototyp einer Demo-Identität; mehrere Studierende sind noch nicht umgesetzt.
 
 Die `.env` im Projektstamm enthält `COURSE_TOKEN`, `LITELLM_API_KEY`,
@@ -19,19 +20,18 @@ Weder Schlüssel noch Code/Dialogsätze werden geloggt oder in SQLite gespeicher
 
 ## Gezielte Tipps und Verbrauch
 
-`POST /hint` benötigt eine konkrete `task`: `1a`, `1b`, `2a/b`, `2c`,
-`2d`, `3a`, `3b`, `3c` oder `4` (die bisherigen deutschen Auswahllabels
-werden ebenfalls akzeptiert). Die Extension sendet den Praktikumscode an
-unser Backend; erst dort erfolgt die AST-Auswahl vor der Weitergabe an
-FH-LiteLLM. Es werden keine studentischen Funktionen ausgeführt.
+`POST /hint` benötigt `task` und – falls die Aufgabe Teilaufgaben hat – `part`,
+jeweils wie in den Notebook-Tags (`task:3`, `part:c`). Das Backend prüft, dass
+im Notebook unter `tasks/<praktikum>/` eine passende `role:answer`-Zelle
+existiert, und übernimmt die `role:prompt`-Zellen der Task ohne Part sowie die
+des gewählten Parts als Aufgabenstellung. Es werden keine studentischen
+Funktionen ausgeführt.
 
-Übertragen werden die gemeinsame Einleitung der Aufgabe, die ausgewählte
-Teilaufgabe, passende Definitionen samt transitiven Abhängigkeiten sowie
-zugeordnete pytest-Fehler. Die Frage wird unverändert übernommen. Bei
-Syntaxfehlern oder unbekannten Funktionsnamen wird die fehlende Zuordnung
-explizit gemeldet; es gibt keinen Fallback auf den gesamten Code. `factorial`
-wird für 1a/1b als mögliche abweichende Benennung berücksichtigt. Globale
-Collection-Fehler und nicht zuordenbare Exporter-Testnamen werden ausgelassen.
+Die Auswahl des Codes erfolgt bereits in der Extension: Sie sendet nur
+`role:setup`-Code und die Antwortzellen der Task bis einschließlich des
+gewählten Parts. Das Backend leitet diesen Code unverändert weiter. Aus der
+pytest-Ausgabe werden nur Fehlerblöcke von Tests mit dem Präfix
+`test_<task><part>_` übernommen; globale Collection-Fehler werden ausgelassen.
 
 Die Antwort enthält zusätzlich `usage`: `requested_model`, `reported_model`,
 `deployment_id`, `input_tokens`, `output_tokens`, `total_tokens`, `cost_usd`,

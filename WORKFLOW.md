@@ -26,6 +26,10 @@ Eine Task kann mehrere Parts besitzen. Parts dürfen räumlich getrennt sein. Me
 
 Aufgaben gelten als atomar. Tests einer Task dürfen keinen studentischen Zustand aus vorherigen Tasks voraussetzen. `role:setup` ist davon ausgenommen und darf gemeinsam benötigte Imports/Setup bereitstellen.
 
+`task`- und `part`-Werte bestehen nur aus Buchstaben und Ziffern (z. B. `task:2`, `part:c`). Jede `role:answer`-Zelle trägt ein `task`-Tag. Die zugehörige `role:prompt`-Zelle mit denselben `task`-/`part`-Tags beginnt mit einer Überschrift; sie erscheint als Titel in der Aufgabenauswahl der Extension.
+
+Die Extension liest Aufgaben und Teilaufgaben ausschließlich aus diesen Tags. Es gibt keine praktikumsspezifischen Listen im Code von Extension oder Backend.
+
 ## 2. Paketformat
 
 Der Professor verteilt ein ZIP mit folgender Mindeststruktur:
@@ -72,10 +76,13 @@ Regeln:
 6. Student bearbeitet ausschließlich `role:answer`-Zellen.
 7. `Tests ausführen` speichert das Notebook, extrahiert `role:setup` + `role:answer` in Notebook-Reihenfolge und erzeugt `<notebook>.py` als Laufzeit-Artefakt.
 8. pytest läuft lokal gegen diese generierte Datei.
+9. Für einen KI-Tipp wählt der Student eine Aufgabe/Teilaufgabe aus den Tags. Übertragen werden nur `role:setup`-Code und die Antwortzellen dieser Task bis einschließlich der gewählten Teilaufgabe (Reihenfolge des ersten Auftretens der Parts). Die Aufgabenstellung liest das Backend aus den `role:prompt`-Zellen seiner eigenen Kopie des Pakets unter `tasks/<id>/`.
 
 Ein vorhandenes `work/<id>/` wird beim erneuten Laden niemals still überschrieben.
 
 ## 4. Unit-Tests
+
+Testfunktionen heißen `test_<task><part>_<beschreibung>`, z. B. `test_2c_submatrix_function` für `task:2`, `part:c` oder `test_4_sort_values` für `task:4` ohne Part. Über dieses Präfix ordnet die Extension Ergebnisse den Teilaufgaben zu (Einzelprüfung, Fortschrittsanzeige) und das Backend Testfehler einem KI-Tipp. Hat eine Task Parts, wird pro Part getestet.
 
 Tests prüfen fachliches Verhalten und, wo die Aufgabenstellung eine konkrete Implementierungsart fordert, zusätzlich Struktur per AST. Mehrere Eingabefälle innerhalb einer Testfunktion zählen weiterhin als ein Bewertungskriterium.
 
@@ -87,7 +94,8 @@ Vor Veröffentlichung:
 
 - [ ] Notebook öffnet ohne Fehler.
 - [ ] Jede Aufgaben-/Antwortzelle hat gültige Rollen-Tags.
-- [ ] `task`/`part`-Tags sind konsistent.
+- [ ] `task`/`part`-Tags sind konsistent und bestehen nur aus Buchstaben/Ziffern.
+- [ ] Jede Testfunktion beginnt mit `test_<task><part>_` einer vorhandenen Antwortzelle.
 - [ ] Setup-/Importcode ist als `role:setup` markiert.
 - [ ] Unit-Tests laufen gegen eine Referenzlösung vollständig grün.
 - [ ] Offenes Starter-Notebook wird sinnvoll als offen/fehlend erkannt.

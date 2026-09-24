@@ -6,7 +6,7 @@ import sqlite3
 import httpx
 from fastapi import HTTPException
 
-from backend.settings import ROOT, settings
+from backend.settings import settings
 from backend.hint_context import build_context
 from backend.plain_text import plain_text
 from backend.hint_usage import response_usage, save_usage
@@ -30,14 +30,13 @@ def get_hint(payload):
     key = config.get("LITELLM_API_KEY", "")
     if not key:
         raise HTTPException(503, "LiteLLM-Schlüssel fehlt in der lokalen .env-Datei.")
-    assignment = (ROOT / "tasks" / payload.praktikum / "AUFGABEN.md").read_text()
-    task, assignment, code, errors = build_context(payload, assignment)
+    task, assignment, code, errors = build_context(payload)
     body = {
         "model": config.get("LITELLM_MODEL", "default_router"),
         "messages": [
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": (
-                f"Teilaufgabe: {payload.task}\nFrage: {payload.question}\n"
+                f"Teilaufgabe: {task}\nFrage: {payload.question}\n"
                 f"Aufgabenstellung:\n{assignment}\n"
                 f"Aktueller Code:\n{code}\n"
                 f"Letzte Testausgabe:\n{errors}"

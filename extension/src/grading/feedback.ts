@@ -1,4 +1,5 @@
 import { TestCaseResult } from "./junitXml";
+import { NotebookTask } from "../notebook";
 
 export function feedback(test: TestCaseResult): string {
   if (test.passed) { return "Bestanden"; }
@@ -23,10 +24,14 @@ export function isOpen(test: TestCaseResult): boolean {
   return !test.passed && /\b(?:OPEN|MISSING):|NotImplementedError/.test(test.detail || "");
 }
 
-export const subtasks = ["1a", "1b", "2a", "2b", "2c", "2d", "3a", "3b", "3c", "4"];
-export function subtaskSummary(cases: TestCaseResult[]): string[] {
-  return subtasks.map(task => {
-    const checks = cases.filter(c => c.name.startsWith(`test_${task}_`));
+/** Konvention aus WORKFLOW.md: Tests einer (Teil-)Aufgabe heißen test_<task><part>_… */
+export function testPrefix(id: string): string {
+  return `test_${id}_`;
+}
+
+export function subtaskSummary(cases: TestCaseResult[], tasks: NotebookTask[]): string[] {
+  return tasks.map(({ id: task }) => {
+    const checks = cases.filter(c => c.name.startsWith(testPrefix(task)));
     if (!checks.length) { return `${task}: noch nicht geprüft`; }
     const passed = checks.filter(c => c.passed).length;
     const open = checks.filter(isOpen).length;

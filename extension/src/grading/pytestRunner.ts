@@ -4,6 +4,7 @@ import * as os from "os";
 import * as path from "path";
 import type { CancellationToken } from "vscode";
 import { parseJunitXml, TestCaseResult } from "./junitXml";
+import { testPrefix } from "./feedback";
 
 export interface PytestRun { testcases: TestCaseResult[]; output: string; }
 
@@ -13,8 +14,8 @@ export async function runPytest(cwd: string, pythonPath = "", token?: Cancellati
   try {
     const args = ["-m", "pytest", "-q", "--tb=short", "--continue-on-collection-errors", `--junitxml=${report}`];
     if (subtask) {
-      if (!/^(?:[1-3][a-d]|4)$/.test(subtask)) { throw new Error("Unbekannte Teilaufgabe."); }
-      args.push("-k", `test_${subtask}_`);
+      if (!/^[A-Za-z0-9]+$/.test(subtask)) { throw new Error("Unbekannte Teilaufgabe."); }
+      args.push("-k", testPrefix(subtask));
     }
     let run;
     try { run = await runProcess(pythonPath || "python", args, cwd, token); }
@@ -26,7 +27,9 @@ export async function runPytest(cwd: string, pythonPath = "", token?: Cancellati
     if (run.exitCode !== 0 && run.exitCode !== 1) {
       throw new Error(`pytest konnte nicht vollständig laufen (Exit ${run.exitCode}).\n${run.output}`);
     }
-    const testcases = parseJunitXml(await fs.readFile(report, "utf8"));
+    // -k trifft auch Modulnamen (test_5_praktikum.py); daher nach Testnamen filtern.
+    const testcases = parseJunitXml(await fs.readFile(report, "utf8"))
+      .filter(test => !subtask || test.name.startsWith(testPrefix(subtask)));
     if (!testcases.length) { throw new Error("Keine Tests gefunden."); }
     return { testcases, output: run.output };
   } finally { await fs.rm(temp, { recursive: true, force: true }); }

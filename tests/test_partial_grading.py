@@ -5,6 +5,8 @@ import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
+from grader.notebook_cells import extract_code, read_cells
+
 SOURCE = Path('tasks/5_praktikum')
 
 
@@ -45,7 +47,7 @@ def test_full_run_counts_missing_tasks_as_open(tmp_path):
 
 
 def test_starter_is_open_including_structure_checks(tmp_path):
-    cases = run_attempt(tmp_path, (SOURCE / '5_praktikum.py').read_text())
+    cases = run_attempt(tmp_path, extract_code(read_cells(SOURCE / '5_praktikum.ipynb')))
     assert len(cases) == 19
     assert all(case.find('skipped') is not None for case in cases)
 

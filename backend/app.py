@@ -6,15 +6,16 @@ import sqlite3
 import threading
 import time
 from pathlib import Path
-from typing import Annotated, Literal
+from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException
 from pydantic import BaseModel, Field
 
+from backend.hint_context import package_cells
 from backend.settings import ROOT, settings
 from backend.tutor import get_hint
 
-app = FastAPI(title="Praktikum 5 – lokales Backend", version="0.2.0")
+app = FastAPI(title="Praktikumsbegleiter – lokales Backend", version="0.2.0")
 hint_times: dict[str, list[float]] = {}
 rate_lock = threading.Lock()
 
@@ -29,16 +30,21 @@ def authenticate(authorization: Annotated[str | None, Header()] = None):
     return hashlib.sha256(expected.encode()).hexdigest()[:16]
 
 
+PackageId = Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]+$", max_length=100)]
+TagId = Annotated[str, Field(pattern=r"^[A-Za-z0-9]*$", max_length=20)]
+
+
 class HintRequest(BaseModel):
-    praktikum: Literal["5_praktikum"]
+    praktikum: PackageId
     code: str = Field(max_length=40000)
     traceback: str = Field(default="", max_length=16000)
-    task: str = Field(default="Gesamtes Praktikum", max_length=120)
+    task: TagId = Field(min_length=1)
+    part: TagId = ""
     question: str = Field(default="Was ist mein nächster Schritt?", max_length=2000)
 
 
 class Submission(BaseModel):
-    praktikum: Literal["5_praktikum"]
+    praktikum: PackageId
     passed: bool
     score: int = Field(ge=0, le=10000)
     total: int = Field(gt=0, le=10000)
@@ -64,6 +70,7 @@ def submit(payload: Submission, identity: str = Depends(authenticate)):
     passed = payload.score * 100 >= payload.total * 80
     if payload.score > payload.total or payload.passed != passed or abs(payload.percentage - percentage) > 0.01:
         raise HTTPException(422, "Punktestand und Bestehensstatus widersprechen sich.")
+    package_cells(payload.praktikum)  # nur veröffentlichte Praktika annehmen
     target = Path(settings().get("SUBMISSIONS_DB", str(ROOT / ".local" / "submissions.sqlite3")))
     target.parent.mkdir(parents=True, exist_ok=True)
     with sqlite3.connect(target) as db:

@@ -5,7 +5,33 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
-## 2026-09-13 — Zusammenführung mit main, Version 0.3.0
+## 2026-09-24 — Aufgaben, Teilaufgaben und Tipp-Kontext aus Notebook-Tags
+
+**Kontext:** Nach der Umstellung auf getaggte Notebooks waren Teilaufgaben,
+Tipp-Auswahl, Testnamen und Codezuordnung weiterhin fest für Praktikum 5 in
+Extension und Backend hinterlegt. Das Backend las zudem noch die entfernte
+`AUFGABEN.md`, wodurch jeder KI-Tipp fehlschlug.
+
+**Entscheidung:**
+- Aufgaben/Teilaufgaben werden ausschließlich aus `task:`/`part:`-Tags gelesen
+  (`extension/src/notebook.ts`, `grader/notebook_cells.py`).
+- Testnamen-Konvention `test_<task><part>_…` verbindet Tests mit Teilaufgaben.
+- `/hint` erhält `task` und `part` getrennt. Die Aufgabenstellung stammt aus den
+  `role:prompt`-Zellen des Pakets unter `tasks/<id>/`.
+- Die Codeauswahl für Tipps erfolgt in der Extension: `role:setup` plus
+  Antwortzellen derselben Task bis einschließlich des gewählten Parts. Die
+  bisherige AST-Auswahl im Backend mit festen Namenslisten entfällt.
+
+**Datenschutz:** An das Backend geht nicht mehr der Code des ganzen Notebooks,
+sondern nur die gewählte Task. An LiteLLM gehen jetzt auch frühere Parts
+derselben Task vollständig (vorher nur per AST erkannte Abhängigkeiten); andere
+Tasks werden nie übertragen. Bei Syntaxfehlern wird der Code der Task gesendet,
+statt den Tipp ohne Code zu erzeugen.
+
+**Begründung:** Neue Praktika brauchen keine Codeänderungen. Die Atomarität
+der Tasks macht die Task zur natürlichen Grenze des Kontexts.
+
+ — Zusammenführung mit main, Version 0.3.0
 
 Der lokale LiteLLM-Prototyp ersetzt die parallelen Extension-Implementierungen.
 Notebook-Reader und Exporter bleiben erhalten. Die Extension erkennt beide

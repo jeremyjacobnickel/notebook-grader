@@ -1,7 +1,8 @@
 import * as path from "path";
 import * as vscode from "vscode";
 import { state } from "./state";
-import { extractNotebookCode, notebookFile } from "./taskSource";
+import { Cell, extractCode, readCells } from "./notebook";
+import { notebookFile } from "./taskSource";
 
 export function taskDirectory(): string | undefined {
   if (state.taskDir) { return state.taskDir; }
@@ -9,7 +10,8 @@ export function taskDirectory(): string | undefined {
   return notebook?.endsWith(".ipynb") ? path.dirname(notebook) : undefined;
 }
 
-export async function currentCode(): Promise<string> {
+/** Zellen des aktuellen Notebooks nach dem Speichern. */
+export async function currentCells(): Promise<Cell[]> {
   const folder = taskDirectory();
   if (!folder) { throw new Error("Bitte zuerst ein Praktikum laden oder sein Notebook öffnen."); }
   const file = await notebookFile(folder);
@@ -18,7 +20,11 @@ export async function currentCode(): Promise<string> {
   // der anschließend an pytest und den KI-Tutor geht.
   const open = vscode.workspace.notebookDocuments.find(document => document.uri.fsPath === file);
   if (open?.isDirty) { await open.save(); }
-  return extractNotebookCode(file);
+  return readCells(file);
+}
+
+export async function currentCode(): Promise<string> {
+  return extractCode(await currentCells());
 }
 
 export function activateTask(folder: string): void {

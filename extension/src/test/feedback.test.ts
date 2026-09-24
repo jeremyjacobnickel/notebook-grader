@@ -7,8 +7,9 @@ test("missing functions and placeholders are open with explicit reasons", () => 
   const cases = parseJunitXml('<testcase name="test_1a_iteration"><skipped message="MISSING: factorial_iter fehlt." /></testcase>');
   assert.equal(isOpen(cases[0]), true);
   assert.match(feedback(cases[0]), /factorial_iter fehlt/);
-  assert.match(subtaskSummary(cases)[0], /offen/);
-  assert.match(subtaskSummary(cases)[1], /noch nicht geprüft/);
+  const tasks = [{task: "1", part: "a", id: "1a", title: ""}, {task: "1", part: "b", id: "1b", title: ""}];
+  assert.match(subtaskSummary(cases, tasks)[0], /^1a: offen/);
+  assert.match(subtaskSummary(cases, tasks)[1], /^1b: noch nicht geprüft/);
 });
 
 test("runtime and expectation failures have distinct explanations", () => {

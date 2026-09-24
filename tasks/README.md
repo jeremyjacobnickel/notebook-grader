@@ -1,13 +1,13 @@
 # Praktikumsaufgaben
 
-`5_praktikum/` enthält den unbearbeiteten Python-Starter, die ursprüngliche
-Aufgabenbeschreibung aus dem bereitgestellten Praktikum und 19 pytest-Prüfungen.
-Die persönliche Lösung ist nicht Teil dieses Ordners oder Repositories.
+Jeder Unterordner ist ein veröffentlichtes Praktikumspaket im Format aus
+[WORKFLOW.md](../WORKFLOW.md): `manifest.json`, das getaggte Aufgaben-Notebook,
+pytest-Tests und optionale Hilfsdateien. Studierende erhalten diesen Inhalt als
+ZIP; das Backend liest hier die Aufgabenstellung für KI-Tipps und nimmt nur
+Abgaben zu vorhandenen Paketen an.
 
-Die Extension kopiert diesen Ordner in den Arbeitsbereich. Bestehende
-Bearbeitungen werden wieder geöffnet und nicht überschrieben. Die Tests starten
-im kopierten Ordner und prüfen `5_praktikum.py` neben der Testdatei.
+`5_praktikum/` enthält das unbearbeitete Notebook und 19 pytest-Prüfungen.
+Musterlösungen sind nicht Teil dieses Ordners oder Repositories.
 
-Jeder Test zählt einen Punkt; bestanden ab 80 %. Strukturprüfungen prüfen die
-geforderten typischen direkten Implementierungen. Details und bewusst nicht
+Jeder Test zählt einen Punkt; bestanden ab 80 %. Details und bewusst nicht
 bewertete Teile stehen in [PROTOTYP.md](../PROTOTYP.md).

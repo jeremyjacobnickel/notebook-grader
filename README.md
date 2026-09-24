@@ -91,9 +91,11 @@ TypeScript, VS Code API.
 
 ### `backend/`
 
-FastAPI-Prototyp mit `/submit` und `/hint`. Der KI-Tutor erhält nur den extrahierten Python-Code und die relevante Testausgabe, nicht die vollständige Notebook-JSON-Datei.
+FastAPI-Prototyp mit `/submit` und `/hint`. Der KI-Tutor erhält nur den Setup-Code und die Antwortzellen der gewählten Aufgabe sowie die zugeordnete Testausgabe, nicht die vollständige Notebook-JSON-Datei. Die Aufgabenstellung liest das Backend aus den `role:prompt`-Zellen des veröffentlichten Pakets unter `tasks/<id>/`; angenommen werden nur dort vorhandene Praktika.
 
 ### `grader/`
+
+`notebook_cells.py` liest getaggte Notebook-Zellen (Python-Gegenstück zu `extension/src/notebook.ts`) und wird vom Backend und den Tests genutzt.
 
 Historische und vorbereitende Notebook-/Testwerkzeuge. Die vorhandene Exporter-Logik stammt aus der früheren `.py`-Zwischenarchitektur und darf nicht mehr als kanonischer Studentenworkflow behandelt werden. Bei Weiterentwicklung ist sie auf das in `WORKFLOW.md` beschriebene Notebook-/ZIP-Format auszurichten oder als Legacy-Werkzeug zu markieren.
 
@@ -139,7 +141,7 @@ Das Aufgaben-Notebook im verteilten Paket enthält nur Aufgabenstellung, Setup u
 
 ## KI-Tutor
 
-Der Tutor soll gezielt helfen, aber keine fertigen Lösungen liefern. Die sokratische Systemanweisung wird serverseitig erzwungen. Für `/hint` werden nur die benötigten studentischen Codeanteile übertragen. Datenschutz und zulässige Speicherung von KI-Metadaten müssen vor Produktivbetrieb abschließend geklärt werden.
+Der Tutor soll gezielt helfen, aber keine fertigen Lösungen liefern. Die sokratische Systemanweisung wird serverseitig erzwungen. Für `/hint` wählt die Extension anhand der `task`-/`part`-Tags nur die benötigten studentischen Codeanteile aus (siehe `WORKFLOW.md`). Datenschutz und zulässige Speicherung von KI-Metadaten müssen vor Produktivbetrieb abschließend geklärt werden.
 
 ## GitLab / Abgabe
 

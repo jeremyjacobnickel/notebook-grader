@@ -1,35 +1,18 @@
-// Praktikums-Pakete und Notebook-Codeextraktion.
+// Praktikums-Pakete: Manifest, ZIP-Import und die generierte pytest-Eingabe.
 //
-// Das studentische Arbeitsformat ist genau ein .ipynb. Aufgabenstellung und
-// Antwortzellen liegen gemeinsam im Notebook; pytest erhält vor dem Testlauf
-// eine aus getaggten Codezellen erzeugte .py-Datei mit demselben Basisnamen.
+// Das studentische Arbeitsformat ist genau ein .ipynb. pytest erhält vor dem
+// Testlauf eine aus getaggten Codezellen erzeugte .py mit demselben Basisnamen.
 
 import * as fs from "fs/promises";
 import * as path from "path";
 import { inflateRawSync } from "zlib";
+import { extractCode, readCells } from "./notebook";
 
 export type PackageManifest = {
   version: number;
   id: string;
   notebook: string;
 };
-
-type NotebookCell = {
-  cell_type?: string;
-  source?: string | string[];
-  metadata?: { tags?: unknown };
-};
-
-type NotebookDocument = { cells?: NotebookCell[] };
-
-function sourceText(source: string | string[] | undefined): string {
-  return Array.isArray(source) ? source.join("") : (source ?? "");
-}
-
-function tags(cell: NotebookCell): string[] {
-  const value = cell.metadata?.tags;
-  return Array.isArray(value) ? value.filter((tag): tag is string => typeof tag === "string") : [];
-}
 
 /** Liefert die eine kanonische Notebook-Datei eines importierten Praktikums. */
 export async function notebookFile(folder: string): Promise<string> {
@@ -43,32 +26,11 @@ export async function notebookFile(folder: string): Promise<string> {
   return file;
 }
 
-/** Extrahiert nur ausführbaren Studenten-/Setup-Code aus dem Notebook. */
-export async function extractNotebookCode(file: string): Promise<string> {
-  const raw = JSON.parse(await fs.readFile(file, "utf8")) as NotebookDocument;
-  if (!Array.isArray(raw.cells)) { throw new Error("Ungültiges Jupyter-Notebook: cells fehlt."); }
-
-  const chunks: string[] = [];
-  raw.cells.forEach((cell, index) => {
-    if (cell.cell_type !== "code") { return; }
-    const cellTags = tags(cell);
-    if (!cellTags.includes("role:setup") && !cellTags.includes("role:answer")) { return; }
-    const code = sourceText(cell.source).trimEnd();
-    if (!code.trim()) { return; }
-    chunks.push(`# Notebook-Zelle ${index + 1}: ${cellTags.join(", ")}\n${code}`);
-  });
-
-  if (!chunks.length) {
-    throw new Error("Das Notebook enthält keine Codezellen mit role:setup oder role:answer.");
-  }
-  return chunks.join("\n\n") + "\n";
-}
-
 /** Schreibt die pytest-Eingabedatei direkt neben das Notebook. */
 export async function materializeNotebookCode(folder: string): Promise<string> {
   const notebook = await notebookFile(folder);
   const target = notebook.replace(/\.ipynb$/i, ".py");
-  await fs.writeFile(target, await extractNotebookCode(notebook), "utf8");
+  await fs.writeFile(target, extractCode(await readCells(notebook)), "utf8");
   return target;
 }
 

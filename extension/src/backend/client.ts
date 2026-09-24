@@ -28,7 +28,8 @@ export interface HintPayload {
   praktikum: string;
   code: string;
   traceback: string;
-  task?: string;
+  task: string;
+  part: string;
   question?: string;
 }
 
