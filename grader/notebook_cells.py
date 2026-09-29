@@ -1,15 +1,13 @@
-"""Getaggte Zellen eines Praktikums-Notebooks lesen (Vertrag aus WORKFLOW.md).
+"""Getaggte Zellen eines veröffentlichten Praktikums-Notebooks lesen (Vertrag aus WORKFLOW.md).
 
-Gegenstück zur Extraktion in der Extension (`extension/src/notebook.ts`).
+Für das Backend (Aufgabenstellung, gültige Aufgaben). Die Testausführung im Paket
+übernimmt grader/praktikum_conftest.py, die Extension extension/src/notebook.ts.
 Tags: `role:prompt|answer|setup`, `task:<id>`, optional `part:<id>`.
 """
 
 import json
-import re
 from dataclasses import dataclass
 from pathlib import Path
-
-ID_PATTERN = re.compile(r"^[A-Za-z0-9]+$")
 
 
 @dataclass(frozen=True)
@@ -58,14 +56,6 @@ def package_notebook(folder):
     if folder.resolve() not in notebook.parents:
         raise ValueError("manifest.json verweist auf ein Notebook außerhalb des Praktikumsordners.")
     return notebook
-
-
-def extract_code(cells):
-    """`role:setup` + `role:answer` in Notebook-Reihenfolge, wie vor dem pytest-Lauf."""
-    chunks = [f"# Notebook-Zelle {cell.index + 1}: {', '.join(cell.tags)}\n{cell.source.rstrip()}"
-              for cell in cells
-              if cell.kind == "code" and cell.role in ("setup", "answer") and cell.source.strip()]
-    return "\n\n".join(chunks) + "\n"
 
 
 def has_answer(cells, task, part=""):

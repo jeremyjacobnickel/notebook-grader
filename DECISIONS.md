@@ -5,7 +5,36 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
-## 2026-09-24 — Aufgaben, Teilaufgaben und Tipp-Kontext aus Notebook-Tags
+## 2026-09-29 — Tests lesen das Notebook direkt, pro Aufgabe isoliert
+
+**Kontext:** Die Extension schrieb alle Setup-/Antwortzellen in eine `.py`,
+und `grader_checks.py` parste diese Datei als Ganzes. Ein Syntaxfehler in einer
+Aufgabe ließ alle Tests scheitern (am echten Paket geprüft: 1a gelöst, Tippfehler
+in 3a → 19 Fehler, Meldung mit Zeile der für Studierende unsichtbaren `.py`).
+Vom Studenten eingefügte Codezellen hatten keine Tags und wurden ignoriert.
+
+**Entscheidung (mit dem Maintainer abgestimmt):**
+- Keine generierte `.py` mehr. Jedes Paket enthält eine einheitliche
+  `conftest.py` (kanonisch: `grader/praktikum_conftest.py`, nur Standardbibliothek
+  + pytest). Sie liest das Notebook über `manifest.json`, ordnet jeden Test per
+  `test_<task><part>_` einer Aufgabe zu und parst/führt nur Setup und die
+  Antwortzellen dieser Task bis einschließlich des Parts aus, Zelle für Zelle.
+- Tests nutzen `@pytest.mark.requires(...)` mit den Fixtures `solution` und
+  `definitions`; die paketspezifische `REQUIRED`-Tabelle in `grader_checks.py`
+  entfällt.
+- Ungetaggte Codezellen gelten als `role:answer` der nächsten darüberliegenden
+  Task/Part (in `conftest.py` und `extension/src/notebook.ts` gleich umgesetzt).
+
+**Begründung:** Aufgaben sind laut Vorgabe atomar; die Ausführung bildet das
+jetzt technisch ab. Das Paket bleibt selbstständig mit reinem `pytest` prüfbar
+(Prof, CI), ohne dass die Extension Code erzeugen muss. Die Kopie der
+`conftest.py` pro Paket hält Tests und Ausführungslogik versionsgleich; ein
+Repository-Test erzwingt identische Kopien.
+
+**Grenze:** Ein Syntaxfehler in einem früheren Part betrifft auch spätere Parts
+derselben Task, weil diese die früheren Zellen mitladen.
+
+ — Aufgaben, Teilaufgaben und Tipp-Kontext aus Notebook-Tags
 
 **Kontext:** Nach der Umstellung auf getaggte Notebooks waren Teilaufgaben,
 Tipp-Auswahl, Testnamen und Codezuordnung weiterhin fest für Praktikum 5 in

@@ -3,7 +3,7 @@ import * as assert from "node:assert/strict";
 import * as fs from "fs/promises";
 import * as os from "os";
 import * as path from "path";
-import { materializeNotebookCode, notebookFile, readManifest } from "../taskSource";
+import { notebookFile, readManifest } from "../taskSource";
 
 async function fixture(): Promise<string> {
   const temp = await fs.mkdtemp(path.join(os.tmpdir(), "grader-notebook-"));
@@ -27,18 +27,6 @@ test("manifest legt genau das kanonische Notebook fest", async () => {
   try {
     assert.equal((await readManifest(temp)).id, "5_praktikum");
     assert.equal(path.basename(await notebookFile(temp)), "5_praktikum.ipynb");
-  } finally { await fs.rm(temp, {recursive: true, force: true}); }
-});
-
-test("pytest-Eingabe enthält nur setup- und answer-Codezellen", async () => {
-  const temp = await fixture();
-  try {
-    const code = await fs.readFile(await materializeNotebookCode(temp), "utf8");
-    assert.equal(path.basename(await materializeNotebookCode(temp)), "5_praktikum.py");
-    assert.match(code, /import numpy as np/);
-    assert.match(code, /def answer/);
-    assert.doesNotMatch(code, /RuntimeError/);
-    assert.match(code, /role:answer, task:1, part:a/);
   } finally { await fs.rm(temp, {recursive: true, force: true}); }
 });
 

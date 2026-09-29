@@ -20,7 +20,7 @@ mindestens:
 manifest.json
 5_praktikum.ipynb
 test_5_praktikum.py
-grader_checks.py        # optional, falls die Tests es benötigen
+conftest.py             # Kopie von grader/praktikum_conftest.py
 assets/                 # optional
 ```
 
@@ -45,10 +45,11 @@ Cell-Tags:
 - `part:<id>` — optionale Teilaufgabe, z. B. `part:c`
 
 Mehrere räumlich getrennte `role:answer`-Zellen dürfen dieselben `task`-/`part`-
-Tags tragen. Beim Testlauf werden alle `role:setup`- und `role:answer`-Zellen in
-Notebook-Reihenfolge in eine generierte `.py` mit demselben Basisnamen geschrieben.
-pytest arbeitet auf dieser Datei. Markdown- und ungetaggte Codezellen werden nicht
-als Abgabecode ausgeführt.
+Tags tragen. Beim Testlauf speichert die Extension das Notebook und startet
+pytest im Praktikumsordner; die `conftest.py` des Pakets liest das Notebook
+direkt und führt pro Test nur Setup und die Zellen der zugehörigen Aufgabe aus.
+Es wird keine `.py` erzeugt. Ungetaggte Codezellen gelten als Antwort der
+Aufgabe darüber; Markdown- und Zellen mit anderen Rollen werden nicht ausgeführt.
 
 ## Praktikum laden
 

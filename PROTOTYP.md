@@ -1,5 +1,8 @@
 # Praktikum 5 – lokaler Prototyp
 
+> Historischer Stand vor der Notebook-/ZIP-Umstellung (u. a. `.py`-Starter,
+> `AUFGABEN.md`, `grader_checks.py`). Aktueller Workflow: `README.md` und `WORKFLOW.md`.
+
 Die Extension lädt Python-Aufgaben, prüft 19 Kriterien und holt auf Wunsch
 einen gezielten Tutor-Hinweis über FH-LiteLLM. Abgaben werden lokal in SQLite
 gespeichert. Das gelieferte Notebook bleibt unverändert.

@@ -1,12 +1,11 @@
-// Praktikums-Pakete: Manifest, ZIP-Import und die generierte pytest-Eingabe.
+// Praktikums-Pakete: Manifest und ZIP-Import.
 //
-// Das studentische Arbeitsformat ist genau ein .ipynb. pytest erhält vor dem
-// Testlauf eine aus getaggten Codezellen erzeugte .py mit demselben Basisnamen.
+// Das studentische Arbeitsformat ist genau ein .ipynb. Die Tests des Pakets lesen
+// es über die mitgelieferte conftest.py direkt; es wird keine .py erzeugt.
 
 import * as fs from "fs/promises";
 import * as path from "path";
 import { inflateRawSync } from "zlib";
-import { extractCode, readCells } from "./notebook";
 
 export type PackageManifest = {
   version: number;
@@ -24,14 +23,6 @@ export async function notebookFile(folder: string): Promise<string> {
   }
   await fs.access(file);
   return file;
-}
-
-/** Schreibt die pytest-Eingabedatei direkt neben das Notebook. */
-export async function materializeNotebookCode(folder: string): Promise<string> {
-  const notebook = await notebookFile(folder);
-  const target = notebook.replace(/\.ipynb$/i, ".py");
-  await fs.writeFile(target, extractCode(await readCells(notebook)), "utf8");
-  return target;
 }
 
 export async function readManifest(folder: string): Promise<PackageManifest> {

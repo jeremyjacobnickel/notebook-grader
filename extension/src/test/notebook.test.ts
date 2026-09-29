@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import * as assert from "node:assert/strict";
-import { extractTaskCode, notebookTasks, parseCells } from "../notebook";
+import { extractCode, extractTaskCode, notebookTasks, parseCells } from "../notebook";
 
 const cell = (kind: string, tags: string[], source: string) => ({cell_type: kind, metadata: {tags}, source: [source]});
 const cells = parseCells(JSON.stringify({cells: [
@@ -36,4 +36,23 @@ test("Tipp-Code enthält Setup und die Aufgabe bis zur gewählten Teilaufgabe", 
 test("leere Antwortzelle liefert Kontext, unbekannte Teilaufgabe einen Fehler", () => {
   assert.match(extractTaskCode(cells, "1", "c"), /def echo/);
   assert.throws(() => extractTaskCode(cells, "1", "z"));
+});
+
+test("ungetaggte Codezellen gehören zur Aufgabe darüber, vor der ersten Aufgabe zu keiner", () => {
+  const student = parseCells(JSON.stringify({cells: [
+    cell("code", [], "VOR_ERSTER_AUFGABE = 1"),
+    cell("markdown", ["role:prompt", "task:1", "part:b"], "### b)"),
+    cell("code", ["hide-input"], "def helper_b(): pass"),
+    cell("code", ["role:answer", "task:2"], "x = 1"),
+    cell("markdown", [], "Notiz des Studenten"),
+    cell("code", [], "def helper_2(): pass"),
+  ]}));
+  assert.deepEqual(student.map(c => c.tags), [
+    [], ["role:prompt", "task:1", "part:b"], ["role:answer", "task:1", "part:b"],
+    ["role:answer", "task:2"], [], ["role:answer", "task:2"],
+  ]);
+  assert.match(extractTaskCode(student, "1", "b"), /helper_b/);
+  assert.doesNotMatch(extractTaskCode(student, "2", ""), /VOR_ERSTER|helper_b/);
+  assert.match(extractCode(student), /helper_2/);
+  assert.doesNotMatch(extractCode(student), /VOR_ERSTER/);
 });

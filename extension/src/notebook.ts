@@ -1,6 +1,6 @@
 // Getaggte Notebook-Zellen lesen (Vertrag aus WORKFLOW.md).
 //
-// Gegenstück zu grader/notebook_cells.py. Aufgaben und Teilaufgaben stammen
+// Gegenstück zu grader/praktikum_conftest.py (Tests) und grader/notebook_cells.py (Backend). Aufgaben und Teilaufgaben stammen
 // ausschließlich aus den Tags role:*, task:<id> und part:<id>.
 
 import * as fs from "fs/promises";
@@ -22,16 +22,28 @@ export type NotebookTask = {
   title: string;
 };
 
+/**
+ * Liest die Zellen samt wirksamer Tags. Ungetaggte Codezellen haben Studierende
+ * eingefügt; sie gelten als Antwort der nächsten darüberliegenden Aufgabe/Teilaufgabe
+ * (vor der ersten Aufgabe: ignoriert). Gleiche Regel wie grader/praktikum_conftest.py.
+ */
 export function parseCells(json: string): Cell[] {
   const raw = JSON.parse(json) as { cells?: RawCell[] };
   if (!Array.isArray(raw.cells)) { throw new Error("Ungültiges Jupyter-Notebook: cells fehlt."); }
+  let context: string[] = [];
   return raw.cells.map((cell, index) => {
-    const tags = cell.metadata?.tags;
+    const value = cell.metadata?.tags;
+    let tags = Array.isArray(value) ? value.filter((tag): tag is string => typeof tag === "string") : [];
+    const task = tags.find(tag => tag.startsWith("task:"));
+    if (task) { context = [task, ...tags.filter(tag => tag.startsWith("part:")).slice(0, 1)]; }
+    if (cell.cell_type === "code" && !tags.some(tag => tag.startsWith("role:")) && context.length) {
+      tags = ["role:answer", ...context];
+    }
     return {
       index,
       kind: cell.cell_type ?? "",
       source: Array.isArray(cell.source) ? cell.source.join("") : (cell.source ?? ""),
-      tags: Array.isArray(tags) ? tags.filter((tag): tag is string => typeof tag === "string") : [],
+      tags,
     };
   });
 }
@@ -54,7 +66,7 @@ function joinCode(cells: Cell[]): string {
     .join("\n\n") + "\n";
 }
 
-/** Setup- und Antwortcode in Notebook-Reihenfolge für den pytest-Lauf. */
+/** Setup- und Antwortcode in Notebook-Reihenfolge (Änderungserkennung zwischen Test und Abgabe/Tipp). */
 export function extractCode(cells: Cell[]): string {
   const code = cells.filter(cell => isCode(cell, "setup", "answer"));
   if (!code.length) { throw new Error("Das Notebook enthält keine Codezellen mit role:setup oder role:answer."); }

@@ -8,7 +8,6 @@ import { output } from "../output";
 import { ScoreViewProvider } from "../sidebar/scoreViewProvider";
 import { updateStatusBarItem } from "../statusBar";
 import { state } from "../state";
-import { materializeNotebookCode } from "../taskSource";
 
 export async function runTests(sidebar: ScoreViewProvider, statusBar: vscode.StatusBarItem, subtask?: string): Promise<void> {
   if (state.busy) { return; }
@@ -29,7 +28,6 @@ export async function runTests(sidebar: ScoreViewProvider, statusBar: vscode.Sta
     if (!await vscode.workspace.saveAll(false)) { throw new Error("Bitte Änderungen speichern und erneut testen."); }
     source = await currentCode();
     const tasks = notebookTasks(await currentCells());
-    await materializeNotebookCode(folder);
     const run = await vscode.window.withProgress({location: vscode.ProgressLocation.Notification,
       title: "Praktikum wird getestet", cancellable: true}, (_, token) =>
       runPytest(folder, getConfig().pythonPath, token, subtask));

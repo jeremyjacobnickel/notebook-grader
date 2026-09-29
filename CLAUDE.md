@@ -14,7 +14,8 @@ If old code or historical documents conflict with `README.md`/`WORKFLOW.md`, do 
 - Distribution format: **ZIP selected by the student via `Praktikum laden`**.
 - The notebook contains prompts and answer cells together.
 - Cell metadata uses `role:prompt`, `role:answer`, `role:setup`, `task:<id>`, and optional `part:<id>` tags.
-- Before pytest, the extension materializes `role:setup` + `role:answer` code cells into a generated `.py` with the same base name as the notebook.
+- Tests read the notebook directly via the package `conftest.py` (canonical copy: `grader/praktikum_conftest.py`), which runs only setup + the answer cells of each test's task/part. No `.py` is generated.
+- Untagged code cells are student-added and belong to the nearest task/part above.
 - Unit tests remain ordinary pytest files and may use AST checks.
 - Existing `.py` exporter examples are legacy/history, not the canonical student workflow.
 

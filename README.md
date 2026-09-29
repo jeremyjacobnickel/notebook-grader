@@ -36,7 +36,7 @@ Beispiel:
 "tags": ["role:answer", "task:2", "part:c"]
 ```
 
-Mehrere Zellen dürfen zu derselben Task/Part gehören und räumlich getrennt sein. Die Notebook-Reihenfolge bleibt erhalten. Aufgaben gelten als atomar: Tests dürfen keinen studentischen Zustand aus vorherigen Tasks voraussetzen. Gemeinsamer `role:setup`-Code ist davon ausgenommen.
+Mehrere Zellen dürfen zu derselben Task/Part gehören und räumlich getrennt sein. Die Notebook-Reihenfolge bleibt erhalten. Aufgaben gelten als atomar: Tests dürfen keinen studentischen Zustand aus vorherigen Tasks voraussetzen. Gemeinsamer `role:setup`-Code ist davon ausgenommen. Vom Studenten eingefügte, ungetaggte Codezellen gehören zur Aufgabe darüber (Details: `WORKFLOW.md`).
 
 ## ZIP-Paket
 
@@ -46,12 +46,12 @@ Mindeststruktur:
 manifest.json
 5_praktikum.ipynb
 test_5_praktikum.py
+conftest.py            # Kopie von grader/praktikum_conftest.py
 ```
 
 Optional:
 
 ```text
-grader_checks.py
 assets/
 ```
 
@@ -69,9 +69,7 @@ Die Extension weist ungültige Paketversionen, fehlende Pflichtdateien und ZIP-P
 
 ## Testausführung
 
-Vor pytest erzeugt die Extension aus allen `role:setup`- und `role:answer`-Codezellen in Notebook-Reihenfolge eine `.py` mit demselben Basisnamen wie das Notebook. Diese Datei ist ein Laufzeit-Artefakt; der Student arbeitet ausschließlich im Notebook.
-
-Die bestehenden Tests können dadurch weiterhin normale Python-Module und AST-Strukturprüfungen verwenden. Teilaufgaben sollen isoliert testbar bleiben; unfertige andere Aufgaben dürfen den Test nicht blockieren.
+Die Extension speichert das Notebook und startet pytest im Praktikumsordner. Die mitgelieferte `conftest.py` liest das Notebook direkt und führt pro Test nur Setup und die Antwortzellen der zugehörigen Aufgabe aus; es wird keine `.py` erzeugt. Ein Syntax- oder Laufzeitfehler in einer Aufgabe blockiert daher keine anderen Aufgaben. Tests nutzen die Fixtures `solution` (ausgeführter Namensraum) und `definitions` (AST-Knoten) sowie den Marker `requires` (siehe `WORKFLOW.md`).
 
 Bestehensmodell des aktuellen Prototyps: **mindestens 80 % der Tests bestanden**. Jeder pytest-Test entspricht einem Bewertungskriterium; mehrere Eingabefälle können innerhalb eines Tests geprüft werden, ohne dadurch stärker gewichtet zu werden.
 
@@ -95,7 +93,7 @@ FastAPI-Prototyp mit `/submit` und `/hint`. Der KI-Tutor erhält nur den Setup-C
 
 ### `grader/`
 
-`notebook_cells.py` liest getaggte Notebook-Zellen (Python-Gegenstück zu `extension/src/notebook.ts`) und wird vom Backend und den Tests genutzt.
+`praktikum_conftest.py` ist die kanonische `conftest.py` jedes Praktikumspakets (Testausführung pro Aufgabe). `notebook_cells.py` liest getaggte Zellen veröffentlichter Pakete für das Backend.
 
 Historische und vorbereitende Notebook-/Testwerkzeuge. Die vorhandene Exporter-Logik stammt aus der früheren `.py`-Zwischenarchitektur und darf nicht mehr als kanonischer Studentenworkflow behandelt werden. Bei Weiterentwicklung ist sie auf das in `WORKFLOW.md` beschriebene Notebook-/ZIP-Format auszurichten oder als Legacy-Werkzeug zu markieren.
 

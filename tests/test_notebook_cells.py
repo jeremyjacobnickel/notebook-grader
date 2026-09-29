@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from grader.notebook_cells import extract_code, has_answer, package_notebook, read_cells
+from grader.notebook_cells import has_answer, package_notebook, read_cells, task_prompt
 
 
 def write_package(folder, notebook_name='p.ipynb'):
@@ -15,12 +15,12 @@ def write_package(folder, notebook_name='p.ipynb'):
     ]}))
 
 
-def test_extracts_only_setup_and_answer_code(tmp_path):
+def test_reads_tags_of_package_notebook(tmp_path):
     write_package(tmp_path)
     cells = read_cells(package_notebook(tmp_path))
-    code = extract_code(cells)
-    assert 'import math' in code and 'x = 1' in code and 'RuntimeError' not in code
+    assert [cell.role for cell in cells] == ['setup', 'answer', '', 'prompt']
     assert has_answer(cells, '1', 'a') and not has_answer(cells, '1')
+    assert task_prompt(cells, '1', 'a') == 'Text'
 
 
 def test_manifest_cannot_point_outside_package(tmp_path):
