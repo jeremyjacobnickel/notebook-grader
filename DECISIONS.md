@@ -5,7 +5,42 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
-## 2026-09-29 — Tests lesen das Notebook direkt, pro Aufgabe isoliert
+## 2026-10-09 — Praktika 1–4 und 6 als Pakete; conftest für Variablen-, Plot- und Dateiaufgaben
+
+**Kontext:** Die Aufgabenversionen der Praktika 1, 2, 3, 4 und 6 sollen im Tool
+laufen. Anders als Praktikum 5 entstehen Ergebnisse dort oft durch Verändern
+statt Zuweisen (`P[0:3, 0:3] = X`, `speakers.add(...)`, `go_one_step(person)`),
+viele Teilaufgaben sind reine Abbildungen, Praktikum 6 legt Ordner an und
+enthält eine `while`-Schleife, und Bilder/Texte werden aus Dateien geladen.
+
+**Entscheidung:**
+- Notebooks inhaltlich unverändert übernommen; ergänzt nur Tags, eine
+  Setup-Zelle `import numpy as np` in Praktikum 1 (Aufgabe 3 fordert `import math`
+  ausdrücklich vom Studenten, deshalb nicht im Setup) und die Trennung von
+  Aufgabenüberschrift und Teil a), wo beides in einer Zelle stand.
+- `conftest.py`: Abhängigkeitsauswahl berücksichtigt Veränderungen (Element-/
+  Attributzuweisung, Methodenaufruf, Übergabe an Funktion); importierte Module
+  zählen nicht als verändert. Marker `run_all` für Notebook-artige Ausführung,
+  Fixture `answer_ast` für Strukturprüfungen der eigenen Teilaufgabe, leere
+  eigene Teilaufgabe = offen, Agg-Backend, 10 s Zeitlimit pro Test (SIGALRM,
+  nicht unter Windows). Syntaxfehler früherer Teilaufgaben betreffen spätere
+  nur noch, wenn deren Code gebraucht wird (hebt die Grenze vom 2026-09-29 auf).
+- Extension: Gesamtlimit 120 s statt 30 s, damit einzelne Endlosschleifen nicht
+  den ganzen Lauf verwerfen; Aufgaben ohne Tests zeigen „keine automatische
+  Prüfung“.
+- Neue Abhängigkeiten `matplotlib` und `Pillow`: für das Aufgabenmaterial
+  zwingend (wie `numpy`) und von den Tests zum Prüfen von Abbildungen und
+  Bildern benötigt.
+- Nicht getestet: Textantworten/Auswahlfragen, Vibe Coding, Ausgaben ohne
+  vorgegebenen Variablennamen (Liste in `tasks/README.md`).
+
+**Offen:** `peppers.tiff`, `faust.txt` und `labyrinth.tiff` fehlen im
+Repository und müssen vom Professor kommen. Die Tests wurden lokal mit
+Referenzlösungen und synthetischen Ersatzdateien verifiziert (beides nicht
+committet). Einzelne Erwartungen beruhen auf Auslegung der Aufgabentexte und
+sollten mit dem Professor abgeglichen werden (siehe Liste in `tasks/README.md`).
+
+ — Tests lesen das Notebook direkt, pro Aufgabe isoliert
 
 **Kontext:** Die Extension schrieb alle Setup-/Antwortzellen in eine `.py`,
 und `grader_checks.py` parste diese Datei als Ganzes. Ein Syntaxfehler in einer

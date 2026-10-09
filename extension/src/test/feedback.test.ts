@@ -8,8 +8,9 @@ test("missing functions and placeholders are open with explicit reasons", () => 
   assert.equal(isOpen(cases[0]), true);
   assert.match(feedback(cases[0]), /factorial_iter fehlt/);
   const tasks = [{task: "1", part: "a", id: "1a", title: ""}, {task: "1", part: "b", id: "1b", title: ""}];
-  assert.match(subtaskSummary(cases, tasks)[0], /^1a: offen/);
-  assert.match(subtaskSummary(cases, tasks)[1], /^1b: noch nicht geprüft/);
+  assert.match(subtaskSummary(cases, tasks, false)[0], /^1a: offen/);
+  assert.match(subtaskSummary(cases, tasks, false)[1], /^1b: noch nicht geprüft/);
+  assert.match(subtaskSummary(cases, tasks, true)[1], /^1b: keine automatische Prüfung/);
 });
 
 test("runtime and expectation failures have distinct explanations", () => {

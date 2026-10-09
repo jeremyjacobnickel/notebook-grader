@@ -30,7 +30,9 @@ export async function runPytest(cwd: string, pythonPath = "", token?: Cancellati
     // -k trifft auch Modulnamen (test_5_praktikum.py); daher nach Testnamen filtern.
     const testcases = parseJunitXml(await fs.readFile(report, "utf8"))
       .filter(test => !subtask || test.name.startsWith(testPrefix(subtask)));
-    if (!testcases.length) { throw new Error("Keine Tests gefunden."); }
+    if (!testcases.length) {
+      throw new Error(subtask ? `Für ${subtask} gibt es keine automatischen Prüfungen.` : "Keine Tests gefunden.");
+    }
     return { testcases, output: run.output };
   } finally { await fs.rm(temp, { recursive: true, force: true }); }
 }
@@ -41,7 +43,8 @@ function runProcess(command: string, args: string[], cwd: string, token?: Cancel
     let output = "";
     let stopped = "";
     const stop = (reason: string) => { stopped = reason; child.kill("SIGKILL"); };
-    const timer = setTimeout(() => stop("Testlauf nach 30 Sekunden abgebrochen. Prüfe Schleifen und Rekursion."), 30000);
+    // Einzelne Tests begrenzt die Paket-conftest.py; dies ist die Obergrenze für den ganzen Lauf.
+    const timer = setTimeout(() => stop("Testlauf nach 120 Sekunden abgebrochen. Prüfe Schleifen und Rekursion."), 120000);
     const cancel = token?.onCancellationRequested(() => stop("Testlauf abgebrochen."));
     if (token?.isCancellationRequested) { stop("Testlauf abgebrochen."); }
     const collect = (chunk: Buffer) => { output = (output + chunk.toString()).slice(-100000); };

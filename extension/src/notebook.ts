@@ -101,7 +101,8 @@ export function notebookTasks(cells: Cell[]): NotebookTask[] {
   return tasks;
 }
 
+/** Erste Zeile ohne Markdown-Überschrift/Fettdruck, gekürzt für die Aufgabenauswahl. */
 function heading(markdown: string): string {
-  const line = markdown.split("\n").find(text => text.trim()) ?? "";
-  return line.replace(/^#+\s*/, "").trim();
+  const line = (markdown.split("\n").find(text => text.trim()) ?? "").replace(/^#+\s*/, "").replaceAll("**", "").trim();
+  return line.length > 60 ? `${line.slice(0, 59)}…` : line;
 }

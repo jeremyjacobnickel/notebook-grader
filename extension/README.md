@@ -21,7 +21,7 @@ manifest.json
 5_praktikum.ipynb
 test_5_praktikum.py
 conftest.py             # Kopie von grader/praktikum_conftest.py
-assets/                 # optional
+peppers.tiff            # optional: Dateien, die Aufgaben laden
 ```
 
 `manifest.json` Version 1:

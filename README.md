@@ -49,11 +49,7 @@ test_5_praktikum.py
 conftest.py            # Kopie von grader/praktikum_conftest.py
 ```
 
-Optional:
-
-```text
-assets/
-```
+Optional: Dateien, die Aufgaben oder Tests laden (z. B. `peppers.tiff`), dort, wo die Aufgabe sie per relativem Pfad öffnet – meist neben dem Notebook.
 
 Manifest Version 1:
 
@@ -99,7 +95,7 @@ Historische und vorbereitende Notebook-/Testwerkzeuge. Die vorhandene Exporter-L
 
 ### `tasks/`
 
-Praktikums-/Testmaterial für Entwicklung und Verifikation. Neue Praktika müssen dem Notebook-/Manifest-Vertrag entsprechen.
+Veröffentlichte Praktikumspakete 1–6 (Übersicht, fehlende Dateien und nicht automatisch geprüfte Aufgaben: `tasks/README.md`). Neue Praktika müssen dem Notebook-/Manifest-Vertrag entsprechen.
 
 ## Entwicklung
 

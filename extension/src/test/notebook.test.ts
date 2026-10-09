@@ -8,7 +8,7 @@ const cells = parseCells(JSON.stringify({cells: [
   cell("markdown", ["role:prompt", "task:1", "part:a"], "### a) Satzzeichen\nText"),
   cell("code", ["role:setup"], "import string"),
   cell("code", ["role:answer", "task:1", "part:a"], "def clean(s): pass"),
-  cell("markdown", ["role:prompt", "task:1", "part:b"], "### b) Wortecho"),
+  cell("markdown", ["role:prompt", "task:1", "part:b"], "**b)** Wortecho mit einer sehr langen Beschreibung, die für die Auswahlliste gekürzt wird"),
   cell("code", ["role:answer", "task:1", "part:b"], "def echo(s): return clean(s)"),
   cell("code", ["role:answer", "task:2"], "SECRET = 'andere Aufgabe'"),
   cell("code", ["role:answer", "task:1", "part:a"], "HELPER = 1  # räumlich getrennt"),
@@ -17,7 +17,7 @@ const cells = parseCells(JSON.stringify({cells: [
 
 test("Aufgaben und Teilaufgaben kommen aus den Tags", () => {
   assert.deepEqual(notebookTasks(cells).map(t => [t.id, t.title]),
-    [["1a", "a) Satzzeichen"], ["1b", "b) Wortecho"], ["2", ""], ["1c", ""]]);
+    [["1a", "a) Satzzeichen"], ["1b", "b) Wortecho mit einer sehr langen Beschreibung, die für die…"], ["2", ""], ["1c", ""]]);
 });
 
 test("Tipp-Code enthält Setup und die Aufgabe bis zur gewählten Teilaufgabe", () => {

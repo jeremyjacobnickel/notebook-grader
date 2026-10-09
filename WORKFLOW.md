@@ -49,11 +49,7 @@ test_<praktikum>.py
 conftest.py
 ```
 
-Optional:
-
-```text
-assets/
-```
+Optional: Dateien, die Aufgaben oder Tests laden (z. B. `peppers.tiff`, `faust.txt`). Sie liegen dort, wo die Aufgabenstellung sie per relativem Pfad öffnet — meist direkt neben dem Notebook im ZIP-Root, da pytest im Praktikumsordner läuft.
 
 `manifest.json` Version 1:
 
@@ -99,7 +95,11 @@ Die Tests dürfen nicht darauf angewiesen sein, dass alle anderen Aufgaben korre
 
 - Jeder Test gehört über sein Präfix zu genau einer Task/Part; passt kein Präfix, schlägt der Test mit einer klaren Meldung fehl.
 - Geparst werden nur die `role:setup`-Zellen und die Antwortzellen dieser Task bis einschließlich des Parts (Parts in der Reihenfolge ihres ersten Auftretens). Jede Zelle wird einzeln geparst; ein Syntaxfehler betrifft nur Tests, die diese Zelle laden, und nennt die Notebook-Zellennummer. IPython-Zeilen mit `%` oder `!` werden ignoriert.
-- `role:setup` wird vollständig ausgeführt. Von den Antwortzellen werden nur die Definitionen der geforderten Namen und ihre Abhängigkeiten ausgeführt; Beispielaufrufe wie `print(...)` in Antwortzellen laufen nicht mit.
+- Ein Syntaxfehler in einer Zelle der eigenen Teilaufgabe oder im Setup lässt den Test scheitern. Eine fehlerhafte Zelle einer *früheren* Teilaufgabe wird ausgelassen; fehlt dadurch benötigter Code, nennt die Meldung den Syntaxfehler.
+- `role:setup` wird vollständig ausgeführt. Von den Antwortzellen werden nur die Anweisungen ausgeführt, die einen geforderten Namen (oder eine seiner Abhängigkeiten) definieren oder verändern: Zuweisungen, Element-/Attributzuweisungen (`P[0, 0] = 1`), Methodenaufrufe (`speakers.add(x)`) und Übergaben an Funktionen (`go_one_step(person)`). Beispielaufrufe wie `print(f(3))` laufen nicht mit.
+- Ist die eigene Teilaufgabe noch leer, gilt der Test als offen (auch Plot-Tests ohne `requires`).
+- Abbildungen entstehen ohne Fenster (matplotlib-Backend Agg); vor jedem Test werden offene Abbildungen geschlossen.
+- Pro Test gilt ein Zeitlimit von 10 Sekunden (Endlosschleifen), wo das Betriebssystem es unterstützt (nicht unter Windows). Die Extension bricht den gesamten Lauf nach 120 Sekunden ab.
 
 Test-API (ohne Import nutzbar, stammt aus `conftest.py`):
 
@@ -111,9 +111,23 @@ def test_2c_submatrix_function(solution):   # solution: Namensraum nach Ausführ
 @pytest.mark.requires("det_laplace")
 def test_2d_recursion(definitions):          # definitions: Name -> AST-Knoten, für Strukturprüfungen
     node = definitions["det_laplace"]
+
+@pytest.mark.requires("P")
+def test_4d_block_matrix(solution, answer_ast):   # answer_ast: nur Code der eigenen Teilaufgabe
+    assert "block" not in ast.dump(answer_ast)
+
+def test_1_sine_plot(solution):              # ohne requires: alles ausführen, danach plt-Abbildungen prüfen
+    ...
+
+@pytest.mark.run_all                          # alle Anweisungen wie im Notebook, z. B. wenn Dateien
+@pytest.mark.requires("files")               # angelegt werden; Ordner per Fixture isolieren
+def test_3b_glob(empty_dir, solution):
+    ...
 ```
 
-Platzhalter sind unveränderte Starter: Funktionen nur mit `pass`, `...`, `return None` oder `raise NotImplementedError`, sowie Zuweisungen `= None`. Ohne `requires` werden alle Anweisungen der ausgewählten Antwortzellen ausgeführt.
+Platzhalter sind unveränderte Starter: Funktionen nur mit `pass`, `...`, `return None` oder `raise NotImplementedError`, sowie Zuweisungen `= None`. Ohne `requires` oder mit `run_all` werden alle Anweisungen der ausgewählten Antwortzellen ausgeführt.
+
+Aufgaben mit Textantworten, Auswahlfragen (z. B. in Leukipp) oder freier Gestaltung („Vibe Coding“) erhalten keine Tests. Die Extension zeigt sie als „keine automatische Prüfung“. Abbildungen werden locker geprüft: dargestellte Daten, Titel, Achsenbeschriftungen, Legende, Gitter und Anordnung — nicht Farben oder Stil. Erwartungswerte möglichst aus der Aufgabenstellung, den Assets oder NumPy-Funktionen berechnen statt als Musterlösung ausschreiben.
 
 ## 5. Vorbereitung eines neuen Praktikums
 
@@ -126,7 +140,8 @@ Vor Veröffentlichung:
 - [ ] Setup-/Importcode steht in einer `role:setup`-Zelle über der ersten Aufgabe; alle nötigen Imports sind ergänzt (außer die Aufgabe fordert den Import vom Studenten).
 - [ ] Jede Codezelle trägt ein `role`-Tag.
 - [ ] `conftest.py` ist eine Kopie von `grader/praktikum_conftest.py`; jeder Test nutzt `requires` für die geforderten Namen.
-- [ ] Unit-Tests laufen gegen eine Referenzlösung vollständig grün.
+- [ ] Unit-Tests laufen gegen eine Referenzlösung vollständig grün (Referenzlösung nur lokal, nie committen).
+- [ ] Typische Fehler (falsche Formel, verbotene Funktion, Syntaxfehler in einer anderen Aufgabe) werden erkannt bzw. isoliert.
 - [ ] Offenes Starter-Notebook wird sinnvoll als offen/fehlend erkannt.
 - [ ] ZIP enthält Manifest, Notebook, Tests und alle benötigten Assets.
 - [ ] Kein Token, keine Musterlösung und keine realen Studentendaten enthalten.

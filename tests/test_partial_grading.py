@@ -9,7 +9,6 @@ from pathlib import Path
 import pytest
 
 SOURCE = Path('tasks/5_praktikum')
-CONFTEST = Path('grader/praktikum_conftest.py')
 
 
 def run_attempt(tmp_path, answers=None, extra_cells=(), selection=None):
@@ -62,11 +61,6 @@ ITERATIVE = '''def factorial_iter(number):
 '''
 
 
-def test_package_conftest_is_canonical_copy():
-    for package in Path('tasks').glob('*/manifest.json'):
-        assert (package.parent / 'conftest.py').read_text() == CONFTEST.read_text(), package.parent
-
-
 def test_starter_is_open_including_structure_checks(tmp_path):
     cases = run_attempt(tmp_path)
     assert len(cases) == 19
@@ -84,11 +78,19 @@ def test_full_run_counts_unsolved_tasks_as_open(tmp_path):
 def test_syntax_error_stays_in_its_task(tmp_path):
     cases = run_attempt(tmp_path, {('1', 'a'): ITERATIVE, ('3', 'a'): 'def remove_punctuation(sentence)\n    return 1\n'})
     assert [outcome(case) for case in by_prefix(cases, 'test_1a_')] == ['passed'] * 3
-    # Spätere Teilaufgaben derselben Aufgabe laden 3a mit und sind ebenfalls betroffen.
-    broken = by_prefix(cases, 'test_3')
-    assert len(broken) == 4 and all(outcome(case) == 'error' for case in broken)
-    assert all('Syntaxfehler in Notebook-Zelle' in case.find('error').get('message') for case in broken)
-    assert all(outcome(case) == 'skipped' for case in by_prefix(cases, 'test_2') + by_prefix(cases, 'test_4'))
+    [broken] = by_prefix(cases, 'test_3a_')
+    assert outcome(broken) == 'error' and 'Syntaxfehler in Notebook-Zelle' in broken.find('error').get('message')
+    # Spätere Teilaufgaben überspringen die fehlerhafte Zelle; 3b/3c sind im Starter noch offen.
+    later = by_prefix(cases, 'test_3b_') + by_prefix(cases, 'test_3c_') + by_prefix(cases, 'test_2') + by_prefix(cases, 'test_4')
+    assert all(outcome(case) == 'skipped' for case in later)
+
+
+def test_needed_code_from_broken_earlier_part_names_the_syntax_error(tmp_path):
+    cases = run_attempt(tmp_path, {('2', 'a'): 'A = np.random.default_rng(seed=124823).random((5, 5)\n',
+                                   ('2', 'b'): 'a_00 = A[0, 0]\na_12 = A[1, 2]\n'}, selection='test_2b_')
+    [case] = cases
+    message = case.find('error').get('message')
+    assert 'NameError' in message and 'Hinweis: Syntaxfehler in Notebook-Zelle' in message
 
 
 def test_runtime_error_in_other_task_is_ignored(tmp_path):

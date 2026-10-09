@@ -29,10 +29,11 @@ export function testPrefix(id: string): string {
   return `test_${id}_`;
 }
 
-export function subtaskSummary(cases: TestCaseResult[], tasks: NotebookTask[]): string[] {
+/** fullRun: alle Tests liefen; eine Aufgabe ohne Tests wird dann nicht automatisch geprüft (z. B. Textantworten). */
+export function subtaskSummary(cases: TestCaseResult[], tasks: NotebookTask[], fullRun: boolean): string[] {
   return tasks.map(({ id: task }) => {
     const checks = cases.filter(c => c.name.startsWith(testPrefix(task)));
-    if (!checks.length) { return `${task}: noch nicht geprüft`; }
+    if (!checks.length) { return `${task}: ${fullRun ? "keine automatische Prüfung" : "noch nicht geprüft"}`; }
     const passed = checks.filter(c => c.passed).length;
     const open = checks.filter(isOpen).length;
     const status = passed === checks.length ? "bestanden" : open === checks.length ? "offen" : "in Bearbeitung";

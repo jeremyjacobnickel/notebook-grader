@@ -44,7 +44,7 @@ export class ScoreViewProvider implements vscode.WebviewViewProvider {
       <p class="${result.isPass ? "pass" : "fail"}">${this.subtask ? (result.passed === result.total ? "Teilaufgabe bestanden" : "Teilaufgabe noch nicht vollständig bestanden") : result.isPass ? "Bestanden" : "Noch nicht bestanden"}</p>` : `<p>${escape(this.message)}</p>`;
     const tests = this.cases.map(test => `<li class="${test.passed ? "pass" : isOpen(test) ? "muted" : "fail"}">${test.passed ? "✓" : isOpen(test) ? "○" : "×"} ${escape(testLabel(test.name))}<br>${escape(feedback(test))}${test.detail ? `<details><summary>Fehlerdetails</summary><pre style="white-space:pre-wrap">${escape(test.detail)}</pre></details>` : ""}</li>`).join("");
     const progress = this.cases.some(c => this.tasks.some(t => c.name.startsWith(testPrefix(t.id))))
-      ? `<h3>Teilaufgaben</h3><ul>${subtaskSummary(this.cases, this.tasks).map(line => `<li>${escape(line)}</li>`).join("")}</ul>` : "";
+      ? `<h3>Teilaufgaben</h3><ul>${subtaskSummary(this.cases, this.tasks, !this.subtask).map(line => `<li>${escape(line)}</li>`).join("")}</ul>` : "";
     return `<!doctype html><html lang="de"><head><meta charset="utf-8">
       <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; script-src 'nonce-${nonce}';">
       <style>
