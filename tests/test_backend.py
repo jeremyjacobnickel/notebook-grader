@@ -117,7 +117,7 @@ def test_hint_filters_upstream_and_records_metadata(client, monkeypatch):
     })
     assert response.status_code == 200
     prompt = seen[0]['messages'][1]['content']
-    assert 'Iterative' in prompt and 'factorial_rec' not in prompt and 'Insertion' not in prompt
+    assert 'iterativen' in prompt and 'factorial_rec' not in prompt and 'Insertion' not in prompt
     usage = response.json()['usage']
     assert usage['cost_usd'] == 0.0002 and usage['total_tokens'] == 120 and usage['recorded']
     with sqlite3.connect(path) as db:

@@ -21,7 +21,7 @@ def test_prompt_contains_task_intro_and_selected_part_only():
 
 def test_context_uses_notebook_tags_and_forwards_scoped_code():
     key, assignment, code, _ = build_context(request(task='1', part='a'))
-    assert key == '1a' and 'Iterative' in assignment and code == 'def factorial_iter(n): pass'
+    assert key == '1a' and 'iterativen' in assignment and code == 'def factorial_iter(n): pass'
     assert build_context(request(task='4'))[0] == '4'
 
 

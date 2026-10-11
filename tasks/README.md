@@ -12,18 +12,19 @@ prüft Layout, Tags und dass jedes leere Notebook vollständig als offen gilt.
 |---|---|---|---|
 | `1_praktikum` | 21 | 1c, 2d (Textantworten), 7 (Vibe Coding) | – |
 | `2_praktikum` | 22 | 3 (keine Variablennamen vorgegeben) | – |
-| `3_praktikum` | 27 | – | `peppers.tiff` **(fehlt noch)** |
-| `4_praktikum` | 20 | – | `peppers.tiff` **(fehlt noch)** |
+| `3_praktikum` | 27 | – | `peppers.tiff` |
+| `4_praktikum` | 20 | – | `peppers.tiff` |
 | `5_praktikum` | 19 | – | – |
-| `6_praktikum` | 24 | Auswahlfrage in 1b, Iterationszahl in 4j | `faust.txt`, `labyrinth.tiff` **(fehlen noch)** |
+| `6_praktikum` | 24 | Auswahlfrage in 1b, Iterationszahl in 4j | `faust.txt`, `labyrinth.tiff` |
 
-Die fehlenden Dateien stammen vom Professor und müssen vor der Veröffentlichung
-neben das Notebook gelegt werden; ohne sie scheitern die betroffenen Aufgaben
-mit `FileNotFoundError`. Die Tests berechnen ihre Erwartungswerte aus diesen
-Dateien; nur die Kontrollwerte aus der Aufgabenstellung (OBERON 8 und
-MEPHISTOPHELES 1331 Zeilen, Ausgang `[16, 17]`) sind fest hinterlegt.
+Die Dateien stammen vom Professor und liegen neben dem Notebook, weil die
+Aufgaben sie per relativem Pfad öffnen. Die Tests berechnen ihre Erwartungswerte
+aus diesen Dateien; nur die Kontrollwerte aus der Aufgabenstellung (OBERON 8 und
+MEPHISTOPHELES 1331 Zeilen, Ausgang `[16, 17]`) sind fest hinterlegt. Mit den
+echten Dateien und lokalen Referenzlösungen sind alle Tests grün.
 
-Die Aufgaben-Notebooks entsprechen inhaltlich den Vorlagen des Professors.
+Die Aufgaben-Notebooks aller sechs Praktika entsprechen inhaltlich den Vorlagen
+des Professors (Antwortzellen leer).
 Ergänzt wurden nur Tags, in Praktikum 1 eine Setup-Zelle mit `import numpy as np`
 und – wo Aufgabenüberschrift und Teil a) in einer Zelle standen – eine Trennung
 dieser beiden Zellen. Musterlösungen sind nicht Teil dieses Repositories.

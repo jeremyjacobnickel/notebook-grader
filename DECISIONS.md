@@ -34,11 +34,13 @@ enthält eine `while`-Schleife, und Bilder/Texte werden aus Dateien geladen.
 - Nicht getestet: Textantworten/Auswahlfragen, Vibe Coding, Ausgaben ohne
   vorgegebenen Variablennamen (Liste in `tasks/README.md`).
 
-**Offen:** `peppers.tiff`, `faust.txt` und `labyrinth.tiff` fehlen im
-Repository und müssen vom Professor kommen. Die Tests wurden lokal mit
-Referenzlösungen und synthetischen Ersatzdateien verifiziert (beides nicht
-committet). Einzelne Erwartungen beruhen auf Auslegung der Aufgabentexte und
-sollten mit dem Professor abgeglichen werden (siehe Liste in `tasks/README.md`).
+**Nachtrag 2026-10-11:** `peppers.tiff`, `faust.txt` und `labyrinth.tiff` vom
+Professor liegen in den Paketen; alle Tests sind damit gegen lokale
+Referenzlösungen grün (Lösungen nicht committet), die Kontrollwerte OBERON 8 und
+MEPHISTOPHELES 1331 bestätigt. Praktikum 5 nutzt jetzt das Original-Notebook des
+Professors statt der zuvor umformulierten Fassung mit vorausgefüllten Startern;
+leere Antwortzellen gelten als offen. Einzelne Erwartungen beruhen weiterhin auf
+Auslegung der Aufgabentexte (Liste in `tasks/README.md`).
 
  — Tests lesen das Notebook direkt, pro Aufgabe isoliert
 
