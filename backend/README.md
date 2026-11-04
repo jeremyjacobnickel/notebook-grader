@@ -6,7 +6,8 @@ aus dem Projektstamm. Einrichtung und Vorführung: [PROTOTYP.md](../PROTOTYP.md)
 - `GET /health`: Erreichbarkeit und ob ein LiteLLM-Key konfiguriert ist.
 - `POST /hint`: Bearer-Token prüfen, maximal sechs Anfragen pro Minute,
   Aufgabenbeschreibung + Code + Fehler + Frage an den FH-LiteLLM-Proxy.
-  Antwort: `{"hint": "…"}`. Kein Code wird im Backend ausgeführt.
+  Antwort: `{"hint": "…", "usage": {…}, "sources": [{"title", "pages", "excerpt"}]}`.
+  Kein Code wird im Backend ausgeführt.
 - `POST /submit`: Konsistente Punktestände in `.local/submissions.sqlite3`
   speichern. Antwort: `{"ok": true, "submission_id": 1}`.
 
@@ -15,7 +16,8 @@ Unterstützt werden alle Praktika, deren Paket unter `tasks/<id>/` liegt
 Prototyp einer Demo-Identität; mehrere Studierende sind noch nicht umgesetzt.
 
 Die `.env` im Projektstamm enthält `COURSE_TOKEN`, `LITELLM_API_KEY`,
-`LITELLM_BASE_URL` und `LITELLM_MODEL`. Sie wird bei Anfragen frisch gelesen.
+`LITELLM_BASE_URL` und `LITELLM_MODEL`, optional `SCRIPT_PDF` (Pfad zum
+Vorlesungsskript). Sie wird bei Anfragen frisch gelesen.
 Weder Schlüssel noch Code/Dialogsätze werden geloggt oder in SQLite gespeichert.
 
 ## Gezielte Tipps und Verbrauch
@@ -41,6 +43,29 @@ Antwort, fehlende Werte sind `null`, nicht null Dollar. Ein gemeldeter
 `default_router` ist kein Beleg für ein konkretes Modell. Die Deployment-ID
 kann von der FH einem Modell zugeordnet werden; wir erfinden diese Zuordnung
 nicht. Die ausgewiesenen LiteLLM-Kosten sind keine persönliche Rechnung.
+
+## Auszüge aus dem Vorlesungsskript
+
+Ist `SCRIPT_PDF` gesetzt, sucht `/hint` passende Abschnitte im Skript
+(`backend/script_index.py`, Hintergrund in `DECISIONS.md`): Die Abschnitte
+stammen aus der PDF-Gliederung mit gedruckten Seitenzahlen und liegen in einem
+SQLite-FTS5-Index unter `.local/script_index.sqlite3` (Override:
+`SCRIPT_INDEX_DB`). Er wird beim ersten Tipp gebaut (einige Sekunden) und neu
+gebaut, sobald sich das PDF ändert. Gesucht wird mit Begriffen aus Frage,
+Fehlerausgabe, Code und Aufgabenstellung; höchstens drei Abschnitte mit
+zusammen ≤ 6000 Zeichen gehen mit Kapitel und Seite an FH-LiteLLM. Die Antwort
+enthält sie als `sources` (Titel der letzten zwei Gliederungsebenen, Seiten,
+die ersten 200 Zeichen, `pdf_page` = 1-basierte PDF-Seite des Abschnitts,
+`heading` = Überschrift). Ohne `SCRIPT_PDF` oder bei Lesefehlern ist `sources`
+leer und der Tipp entsteht wie bisher. `usage.context_characters.script_sent`
+zeigt, wie viel Skripttext mitging.
+
+Suche ohne KI ausprobieren bzw. Index vorab bauen:
+`.venv/bin/python -m backend.script_index "Wie funktioniert meshgrid?"`
+
+Das Skript gehört dem Professor und wird nie committet.
+
+## Verbrauchsprotokoll
 
 Erfolgreiche, lesbare Antworten werden unter `.local/hint_usage.sqlite3`
 (Tabelle `hint_usage`) protokolliert. Optionaler Override: `HINT_USAGE_DB`.

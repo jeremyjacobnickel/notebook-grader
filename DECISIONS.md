@@ -5,6 +5,41 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
+## 2026-11-04 — KI-Tipps mit Auszügen aus dem Vorlesungsskript (Volltextsuche)
+
+**Kontext:** Tipps sollen auf die passende Stelle im Vorlesungsskript (ein
+PDF, ~180 Seiten) verweisen und deren Inhalt einbeziehen. Das Skript gehört dem
+Professor und liegt **nicht** im Repo.
+
+**Entscheidung:**
+- **Volltextsuche statt Vektordatenbank:** SQLite FTS5 mit BM25 (Teil von
+  Pythons `sqlite3`, keine neue Laufzeitabhängigkeit). Ein Skript ergibt nur
+  einige hundert Abschnitte; Fragen, Code und Fehlermeldungen enthalten genau die
+  Fachbegriffe und Funktionsnamen, die BM25 gut findet. Embeddings bräuchten ein
+  Embedding-Modell (bei FH-LiteLLM ungeklärt, lokal PyTorch) und kommen nur
+  dazu, wenn eine Messung zeigt, dass die Volltextsuche danebenliegt.
+- **Abschnitte aus der PDF-Gliederung** (Lesezeichen) mit gedruckten
+  Seitenzahlen; lange Abschnitte werden an Absätzen geteilt. Inhalts- und
+  Literaturverzeichnisse werden nicht indexiert.
+- **Neue Abhängigkeit `pypdf`:** reines Python, liest Text, Gliederung und
+  Seitennummern; `pdftotext`/PyMuPDF bräuchten Systembibliotheken.
+- **Suchanfrage** aus Frage, Fehlerausgabe, Code-Bezeichnern und
+  Aufgabenstellung, ohne Füllwörter und Python-Schlüsselwörter; längere Wörter
+  als Präfix, damit deutsche Beugungen passen.
+- **Einbindung:** Höchstens drei Auszüge (zusammen ≤ 6000 Zeichen) gehen mit
+  Kapitel und Seite an FH-LiteLLM; der Tutor soll auf die Stelle verweisen,
+  statt Beispielcode zu übernehmen. `/hint` liefert zusätzlich `sources`
+  (Kapitel, Seiten, kurzer Anfang), die die Seitenleiste anzeigt.
+- **Index** unter `.local/` (git-ignoriert), wird neu gebaut, wenn sich das PDF
+  ändert (SHA-256). Pfad über `SCRIPT_PDF` in `.env`; ohne diesen Eintrag oder
+  bei Fehlern gibt es Tipps wie bisher, nur ohne Skript.
+
+**Offen:** Erlaubnis des Professors, Skriptauszüge an FH-LiteLLM zu senden und
+anzuzeigen. Zuordnung Aufgabe → Kapitel als Vorfilter. Messung mit
+realistischen Fragen pro Praktikum (Trefferquote unter den ersten drei).
+
+---
+
 ## 2026-11-04 — Autosave: Arbeitsverlauf per Git auf GitLab (Prototyp)
 
 **Kontext:** Lösungen sollen nicht verloren gehen, und es soll ein

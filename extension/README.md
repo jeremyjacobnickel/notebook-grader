@@ -169,3 +169,8 @@ aus den `task`-/`part`-Tags des Notebooks (`src/notebook.ts`); Testnamen folgen
 die Antwortzellen der gewählten Task bis einschließlich der gewählten
 Teilaufgabe. Aufgaben-Markdown, Notebook-Ausgaben, andere Tasks und sonstige
 Metadaten werden nicht übertragen.
+
+Die Antwort enthält `hint`, `usage` und `sources` (passende Stellen im
+Vorlesungsskript mit `title`, `pages`, `excerpt`, `pdf_page`, `heading`). Die
+Seitenleiste zeigt sie unter dem Tipp als „Im Skript nachlesen“; unvollständige
+Einträge werden verworfen, ältere Backends ohne `sources` funktionieren weiter.

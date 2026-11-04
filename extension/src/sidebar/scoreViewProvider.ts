@@ -1,6 +1,6 @@
 import { feedback, isOpen, subtaskSummary, testPrefix } from "../grading/feedback";
 import { NotebookTask } from "../notebook";
-import { HintUsage } from "../backend/client";
+import { HintUsage, ScriptSource } from "../backend/client";
 import { usageText } from "./usageText";
 import * as vscode from "vscode";
 import { randomBytes } from "crypto";
@@ -16,6 +16,7 @@ export class ScoreViewProvider implements vscode.WebviewViewProvider {
   private hint = "";
   private subtask: string | undefined;
   private usage: HintUsage | undefined;
+  private sources: ScriptSource[] = [];
   private message = "Praktikum laden oder eine vorhandene Praktikums-Datei öffnen.";
 
   resolveWebviewView(view: vscode.WebviewView): void {
@@ -35,7 +36,9 @@ export class ScoreViewProvider implements vscode.WebviewViewProvider {
     this.subtask = subtask; this.tasks = tasks;
     this.result = result; this.cases = cases; this.hint = ""; this.render();
   }
-  showHint(hint: string, usage?: HintUsage): void { this.hint = hint; this.usage = usage; this.render(); this.view?.show?.(true); }
+  showHint(hint: string, usage?: HintUsage, sources: ScriptSource[] = []): void {
+    this.hint = hint; this.usage = usage; this.sources = sources; this.render(); this.view?.show?.(true);
+  }
   private render(): void { if (this.view) { this.view.webview.html = this.html(); } }
   private html(): string {
     const nonce = randomBytes(16).toString("hex");
@@ -61,10 +64,18 @@ export class ScoreViewProvider implements vscode.WebviewViewProvider {
       ${tests ? `<details ${this.hint ? "" : "open"}><summary>Prüfungen</summary><ul>${tests}</ul></details>` : ""}
       <p><button data-command="hint">KI-Tipp holen</button><button data-command="submit" ${result && !this.subtask ? "" : "disabled"}>Ergebnis abgeben</button></p>
       <p class="muted">Für einen Tipp gehen nur Setup-Code und deine Antwortzellen der gewählten Aufgabe (bis zur gewählten Teilaufgabe), zugeordnete Testfehler und deine Frage über das Backend an FH-LiteLLM.</p>
-      ${this.hint ? `<h3>Dein nächster Schritt</h3><div class="hint">${escape(this.hint)}</div><details><summary>KI-Verbrauch</summary><p class="hint muted">${escape(usageText(this.usage))}</p></details>` : ""}
+      ${this.hint ? `<h3>Dein nächster Schritt</h3><div class="hint">${escape(this.hint)}</div>${sourcesHtml(this.sources)}<details><summary>KI-Verbrauch</summary><p class="hint muted">${escape(usageText(this.usage))}</p></details>` : ""}
       <script nonce="${nonce}">const api=acquireVsCodeApi();document.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>api.postMessage({command:b.dataset.command})));</script></body></html>`;
   }
 }
+/** Skriptstellen unter dem Tipp: Kapitel, Seiten und kurzer Anfang zum Wiedererkennen. */
+function sourcesHtml(sources: ScriptSource[]): string {
+  if (!sources.length) { return ""; }
+  const items = sources.map(source =>
+    `<li><strong>${escape(source.title)}</strong>, S. ${escape(source.pages)}<br><span class="muted">${escape(source.excerpt)}</span></li>`);
+  return `<h3>Im Skript nachlesen</h3><ul>${items.join("")}</ul>`;
+}
+
 function escape(text: string): string {
   return text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;");
 }

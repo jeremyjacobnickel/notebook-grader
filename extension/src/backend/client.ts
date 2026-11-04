@@ -22,7 +22,17 @@ export interface HintUsage {
   recorded?: boolean;
 }
 
-export interface HintResponse { hint: string; usage?: HintUsage }
+/** Passende Stelle im Vorlesungsskript zu einem Tipp. */
+export interface ScriptSource {
+  title: string;
+  pages: string;
+  excerpt: string;
+  /** 1-basierte PDF-Seite und Überschrift, um das Skript dort zu öffnen (fehlen bei älteren Backends). */
+  pdf_page?: number;
+  heading?: string;
+}
+
+export interface HintResponse { hint: string; usage?: HintUsage; sources: ScriptSource[] }
 
 export interface HintPayload {
   praktikum: string;
@@ -55,7 +65,19 @@ export async function postHint(
   if (typeof response.hint !== "string") {
     throw new Error("Das Backend hat keinen Tipp zurückgegeben.");
   }
-  return {hint: response.hint, usage: response.usage as HintUsage | undefined};
+  return {hint: response.hint, usage: response.usage as HintUsage | undefined, sources: scriptSources(response.sources)};
+}
+
+/** Nur vollständige Quellenangaben übernehmen; ältere Backends liefern gar keine. */
+export function scriptSources(value: unknown): ScriptSource[] {
+  if (!Array.isArray(value)) { return []; }
+  return value.filter((item): item is ScriptSource => !!item && typeof item === "object"
+    && ["title", "pages", "excerpt"].every(key => typeof (item as Record<string, unknown>)[key] === "string"))
+    .map(item => ({
+      title: item.title, pages: item.pages, excerpt: item.excerpt,
+      ...(Number.isInteger(item.pdf_page) && (item.pdf_page as number) > 0 ? { pdf_page: item.pdf_page } : {}),
+      ...(typeof item.heading === "string" ? { heading: item.heading } : {}),
+    }));
 }
 
 async function postJson(
