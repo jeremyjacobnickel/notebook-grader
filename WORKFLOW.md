@@ -85,6 +85,10 @@ Regeln:
 
 Ein vorhandenes `work/<id>/` wird beim erneuten Laden niemals still überschrieben.
 
+Ist der Autosave eingerichtet (`extension/README.md`), landet zusätzlich ein
+Verlauf des Notebooks ohne Ausgaben im GitLab-Repo des Studenten: beim Laden,
+alle 5 Minuten bei Änderungen, nach jedem Testlauf und nach jeder Abgabe.
+
 ## 4. Unit-Tests
 
 Testfunktionen heißen `test_<task><part>_<beschreibung>`, z. B. `test_2c_submatrix_function` für `task:2`, `part:c` oder `test_4_sort_values` für `task:4` ohne Part. Über dieses Präfix ordnet die Extension Ergebnisse den Teilaufgaben zu (Einzelprüfung, Fortschrittsanzeige) und das Backend Testfehler einem KI-Tipp. Hat eine Task Parts, wird pro Part getestet.

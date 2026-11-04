@@ -48,8 +48,9 @@ Die folgenden Punkte sind geplant, noch nicht implementiert:
    Parallelität und Warteschlange. Abgaben dürfen nicht durch wartende
    KI-Anfragen blockiert werden. Kapazität mit der FH abstimmen und mit
    100 simulierten Nutzern testen; zuerst Pilotgruppe, dann ganzer Kurs.
-7. Optional: Arbeitsstände getrennt von verbindlichen Abgaben speichern
-   und laden, falls Studierende zwischen Labor-PC und privatem Gerät wechseln.
+7. ~~Optional: Arbeitsstände getrennt von verbindlichen Abgaben speichern
+   und laden, falls Studierende zwischen Labor-PC und privatem Gerät wechseln.~~
+   Prototyp umgesetzt über den Autosave (siehe DECISIONS.md, 2026-11-04).
 
 Lokales Bearbeiten und Testen bleibt offline möglich. KI, Aufgabenabruf
 und Abgabe benötigen eine Verbindung. Die lokale Bewertung bleibt gemäß

@@ -9,9 +9,11 @@ from pathlib import Path
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Header, HTTPException
+from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel, Field
 
 from backend.hint_context import package_cells
+from backend.script_index import script_file
 from backend.settings import ROOT, settings
 from backend.tutor import get_hint
 
@@ -84,7 +86,23 @@ def submit(payload: Submission, identity: str = Depends(authenticate)):
     return {"ok": True, "submission_id": cursor.lastrowid}
 
 
+def script(identity: str = Depends(authenticate), if_none_match: Annotated[str | None, Header()] = None):
+    """Das Vorlesungsskript, damit die Extension es an der Fundstelle eines Tipps öffnen kann.
+
+    Dieselbe Datei wie im Suchindex, damit Seitenangaben passen. ETag = SHA-256.
+    """
+    found = script_file(settings())
+    if not found:
+        raise HTTPException(404, "Im Backend ist kein Vorlesungsskript konfiguriert.")
+    path, digest = found
+    etag = f'"{digest}"'
+    if if_none_match == etag:
+        return Response(status_code=304, headers={"ETag": etag})
+    return FileResponse(path, media_type="application/pdf", headers={"ETag": etag})
+
+
 # Explizite Registrierung statt eigener Decorators.
 app.add_api_route("/health", health, methods=["GET"])
 app.add_api_route("/hint", hint, methods=["POST"])
 app.add_api_route("/submit", submit, methods=["POST"])
+app.add_api_route("/script", script, methods=["GET"])

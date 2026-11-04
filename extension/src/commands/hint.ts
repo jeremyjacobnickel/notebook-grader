@@ -33,7 +33,7 @@ export async function hint(sidebar: ScoreViewProvider): Promise<void> {
         question: question || "Was ist mein nächster Schritt?", code,
         traceback: state.lastSource === fullCode ? state.lastTraceback : "Kein aktueller Testlauf zu diesem Code."
       }));
-    if (folder === state.taskDir) { sidebar.showHint(text.hint, text.usage); }
+    if (folder === state.taskDir) { sidebar.showHint(text.hint, text.usage, text.sources); }
   } catch (error) { vscode.window.showErrorMessage((error as Error).message); }
   finally { pending = false; }
 }

@@ -86,6 +86,11 @@ Praktikums-ZIP über `Praktikum laden` auswählen.
 | `Notebook Grader: Aufgaben-Notebook öffnen` | aktuelle `.ipynb` öffnen |
 | `Notebook Grader: Ergebnis abgeben` | letztes Gesamtergebnis an das Backend senden |
 | `Notebook Grader: KI-Tipp holen` | extrahierten Antwortcode + letzte Fehlerausgabe an `/hint` senden |
+| `Notebook Grader: Jetzt sichern` | aktuellen Stand sofort committen und auf GitLab übertragen (auch Knopf im Autosave-Verlauf und Klick auf die Statusleiste) |
+| `Notebook Grader: Autosave einrichten` | Einstellungen für Repo-URL und Intervall öffnen |
+| `Notebook Grader: Autosave-Verlauf aktualisieren` | Verlauf in der Seitenleiste neu laden |
+| `Notebook Grader: GitLab-Token eintragen` | Personal Access Token im SecretStorage von VS Code speichern |
+| `Notebook Grader: GitLab-Token entfernen` | gespeichertes Token löschen; danach wird nur lokal gesichert |
 
 ## Einstellungen
 
@@ -94,6 +99,57 @@ Praktikums-ZIP über `Praktikum laden` auswählen.
 | `notebookGrader.backendUrl` | Basis-URL des FH-Backends |
 | `notebookGrader.courseToken` | Kurs-Token; nur als Authorization-Header, nie loggen |
 | `notebookGrader.pythonPath` | Python-Interpreter für pytest |
+| `notebookGrader.autosave.repositoryUrl` | HTTPS-URL des eigenen GitLab-Repos; leer = Autosave aus |
+| `notebookGrader.autosave.intervalMinutes` | Abstand der automatischen Sicherungen (Standard 5 Minuten) |
+
+## Autosave (Prototyp)
+
+Der Autosave legt einen nachvollziehbaren Arbeitsverlauf im privaten
+GitLab-Repo des Studenten an. Er dient der Datensicherung und als
+Gesprächsgrundlage, nicht der Bewertung (Hintergrund in `DECISIONS.md`).
+
+Einrichten:
+
+1. In GitLab ein leeres, privates Repo anlegen.
+2. Unter *Einstellungen → Access Tokens* ein Personal Access Token mit dem
+   Scope `write_repository` und Ablaufdatum erstellen.
+3. `notebookGrader.autosave.repositoryUrl` auf die HTTPS-URL des Repos setzen,
+   z. B. `https://gitlab.com/name/praktika.git`.
+4. `Notebook Grader: GitLab-Token eintragen` ausführen und das Token einfügen.
+
+Gesichert wird beim Laden eines Praktikums (Ausgangsstand), alle
+`intervalMinutes` Minuten bei Änderungen, nach jedem Testlauf und nach jeder
+Abgabe (zusätzlich Tag `abgabe/<id>/<Zeitstempel>`). Ein ungespeichertes
+Notebook wird vorher gespeichert. Im Repo liegt pro Praktikum
+`<id>/<notebook>.ipynb` ohne Ausgaben und Ausführungszähler; die Trailer
+`Praktikum`, `Anlass`, `Tests` und `Teilaufgabe` in den Commit-Nachrichten sind
+für eine spätere Auswertung gedacht.
+
+Die Ansicht **Autosave-Verlauf** im Explorer listet die Snapshots des aktuellen
+Praktikums (Uhrzeit, Anlass, Testergebnis, „nur lokal“, solange noch nicht
+übertragen). Ein Klick zeigt die Änderungen dieses Schritts im Notebook-Diff,
+das Kontextmenü vergleicht einen Stand mit dem aktuellen Notebook oder stellt
+ihn wieder her. Der Speichern-Knopf in der Titelleiste sichert sofort,
+„Aktualisieren“ holt zusätzlich Stände anderer Geräte von GitLab.
+
+**Auf einem anderen Gerät weiterarbeiten:** Autosave dort mit derselben
+Repo-URL und einem Token einrichten, dann das Praktikums-ZIP laden. Gibt es auf
+GitLab schon einen bearbeiteten Stand, fragt die Extension vor dem Öffnen, ob
+er übernommen werden soll. War das Praktikum auf dem Gerät schon geladen:
+Verlauf aktualisieren und per Rechtsklick „Diesen Stand wiederherstellen“.
+Wiederherstellen sichert den aktuellen Stand immer zuerst und protokolliert
+die Übernahme als eigenen Schritt. Ausgaben sind nicht gesichert; die Zellen
+danach neu ausführen. Frühere Stände werden über
+das schreibgeschützte Schema `notebook-grader-autosave:` geöffnet; die
+Zeitachse von VS Code kann sie nicht anzeigen, weil deren Schnittstelle für
+Extensions nicht freigegeben ist.
+
+Das Autosave-Repo ist ein eigener Klon im globalen Speicher der Extension, nicht
+im Workspace. Ohne Netz oder Token wird lokal committet und beim nächsten Anlass
+übertragen. Arbeiten zwei Geräte parallel, wird der GitLab-Stand per Merge
+übernommen (bei Konflikten gewinnt der lokale Stand), nie per Force-Push. Die
+Statusleiste zeigt den letzten Stand; Details stehen im Ausgabekanal
+„Notebook Grader – Autosave“. Benötigt Git ≥ 2.31.
 
 ## Sicherheit des ZIP-Imports
 
@@ -113,3 +169,12 @@ aus den `task`-/`part`-Tags des Notebooks (`src/notebook.ts`); Testnamen folgen
 die Antwortzellen der gewählten Task bis einschließlich der gewählten
 Teilaufgabe. Aufgaben-Markdown, Notebook-Ausgaben, andere Tasks und sonstige
 Metadaten werden nicht übertragen.
+
+Die Antwort enthält `hint`, `usage` und `sources` (passende Stellen im
+Vorlesungsskript mit `title`, `pages`, `excerpt`, `pdf_page`, `heading`). Die
+Seitenleiste zeigt sie unter dem Tipp als „Im Skript nachlesen“; unvollständige
+Einträge werden verworfen, ältere Backends ohne `sources` funktionieren weiter.
+Ein Klick auf eine Stelle öffnet das ganze Skript im Panel „Vorlesungsskript“
+(pdf.js, `src/script/scriptViewer.ts`, `media/scriptViewer.mjs`) auf der Seite
+`pdf_page` und markiert `heading`. Das PDF kommt von `GET /script` und wird im
+`globalStorage` zwischengespeichert (nur bei geänderter ETag neu geladen).

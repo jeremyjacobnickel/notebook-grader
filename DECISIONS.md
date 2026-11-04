@@ -5,6 +5,139 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
+## 2026-11-04 — Skriptstellen im eingebetteten PDF-Viewer öffnen
+
+**Kontext:** Unter einem KI-Tipp stehen die passenden Skriptstellen. Ein kurzer
+Auszug reicht zum Nachlesen nicht; ein Klick soll das Skript genau an dieser
+Stelle öffnen.
+
+**Entscheidung:**
+- **Das Backend liefert das PDF** (`GET /script`, Kurs-Token, ETag/304). So
+  passen die Seiten immer zum Index, aus dem die Fundstellen stammen. Die
+  Extension speichert die Kopie im `globalStorage` und lädt sie nur neu, wenn
+  sich das PDF geändert hat; ohne Verbindung wird die vorhandene Kopie genutzt.
+- **pdf.js in einem Webview-Panel** neben dem Notebook statt eines externen
+  Viewers. Externe Viewer (Vorschau, Browser) können nicht verlässlich auf eine
+  Seite springen und die Überschrift markieren; pdf.js kann beides
+  (`currentPageNumber`, Suche mit `highlightAll`). `sources` enthalten dafür
+  zusätzlich `pdf_page` (1-basierte PDF-Seite) und `heading`.
+- **Neue Abhängigkeit `pdfjs-dist` (≥ 6.5):** Ältere Versionen haben eine
+  Sicherheitslücke (Ausführung von JavaScript über präparierte PDFs). Zusätzlich
+  `isEvalSupported: false`, XFA aus, strenge CSP. Der Worker wird über eine
+  `blob:`-URL gestartet, weil Webviews Worker von Ressourcen-URLs blockieren.
+
+**Offen:** Darf das Skript an Studierende verteilt werden (Erlaubnis des
+Professors)? Paketgröße der Extension wächst um pdf.js (~ einige MB).
+
+---
+
+## 2026-11-04 — KI-Tipps mit Auszügen aus dem Vorlesungsskript (Volltextsuche)
+
+**Kontext:** Tipps sollen auf die passende Stelle im Vorlesungsskript (ein
+PDF, ~180 Seiten) verweisen und deren Inhalt einbeziehen. Das Skript gehört dem
+Professor und liegt **nicht** im Repo.
+
+**Entscheidung:**
+- **Volltextsuche statt Vektordatenbank:** SQLite FTS5 mit BM25 (Teil von
+  Pythons `sqlite3`, keine neue Laufzeitabhängigkeit). Ein Skript ergibt nur
+  einige hundert Abschnitte; Fragen, Code und Fehlermeldungen enthalten genau die
+  Fachbegriffe und Funktionsnamen, die BM25 gut findet. Embeddings bräuchten ein
+  Embedding-Modell (bei FH-LiteLLM ungeklärt, lokal PyTorch) und kommen nur
+  dazu, wenn eine Messung zeigt, dass die Volltextsuche danebenliegt.
+- **Abschnitte aus der PDF-Gliederung** (Lesezeichen) mit gedruckten
+  Seitenzahlen; lange Abschnitte werden an Absätzen geteilt. Inhalts- und
+  Literaturverzeichnisse werden nicht indexiert.
+- **Neue Abhängigkeit `pypdf`:** reines Python, liest Text, Gliederung und
+  Seitennummern; `pdftotext`/PyMuPDF bräuchten Systembibliotheken.
+- **Suchanfrage** aus Frage, Fehlerausgabe, Code-Bezeichnern und
+  Aufgabenstellung, ohne Füllwörter und Python-Schlüsselwörter; längere Wörter
+  als Präfix, damit deutsche Beugungen passen.
+- **Einbindung:** Höchstens drei Auszüge (zusammen ≤ 6000 Zeichen) gehen mit
+  Kapitel und Seite an FH-LiteLLM; der Tutor soll auf die Stelle verweisen,
+  statt Beispielcode zu übernehmen. `/hint` liefert zusätzlich `sources`
+  (Kapitel, Seiten, kurzer Anfang), die die Seitenleiste anzeigt.
+- **Index** unter `.local/` (git-ignoriert), wird neu gebaut, wenn sich das PDF
+  ändert (SHA-256). Pfad über `SCRIPT_PDF` in `.env`; ohne diesen Eintrag oder
+  bei Fehlern gibt es Tipps wie bisher, nur ohne Skript.
+
+**Offen:** Erlaubnis des Professors, Skriptauszüge an FH-LiteLLM zu senden und
+anzuzeigen. Zuordnung Aufgabe → Kapitel als Vorfilter. Messung mit
+realistischen Fragen pro Praktikum (Trefferquote unter den ersten drei).
+
+---
+
+## 2026-11-04 — Autosave: Arbeitsverlauf per Git auf GitLab (Prototyp)
+
+**Kontext:** Lösungen sollen nicht verloren gehen, und es soll ein
+nachvollziehbarer Arbeitsverlauf entstehen. Er dient als Gesprächsgrundlage,
+wenn Code nicht selbst geschrieben wirkt, **nicht** der Bewertung.
+Auffälligkeiten sollen später im Admin-Panel auswertbar sein.
+
+**Entscheidung (Prototyp):**
+- **Repo des Studenten:** Der Student legt ein privates Repo in seinem eigenen
+  GitLab-Account an und trägt die HTTPS-URL ein. Er kann dort die Historie
+  umschreiben; das ist akzeptiert, weil der Verlauf nicht bewertet wird. Für
+  den Kursbetrieb ist ein Repo pro Student in einer Kursgruppe mit Rolle
+  *Developer* und geschütztem Branch vorgesehen.
+- **Anmeldung per Personal Access Token** (Scope `write_repository`) im
+  `SecretStorage` von VS Code, nie in `settings.json`, in der Remote-URL oder in
+  Logs. Git bekommt es nur zur Laufzeit über einen Credential-Helper in
+  Umgebungsvariablen (`GIT_CONFIG_COUNT`, daher Git ≥ 2.31); andere Helper
+  (z. B. Schlüsselbund) werden für diese Aufrufe abgeschaltet. Benutzername
+  `oauth2`, damit später OAuth ohne Umbau des Git-Teils folgen kann.
+  Das Repo legt der Student von Hand an; der Scope `api` wäre zu weit.
+- **System-Git** statt `isomorphic-git` (keine neue Abhängigkeit) oder der
+  `vscode.git`-API (Repo würde in der Quellcodeverwaltung des Studenten
+  auftauchen). Das Autosave-Repo ist ein eigener Klon im globalen Speicher der
+  Extension, getrennt vom Workspace und von eigenen Git-Repos des Studenten.
+  Hineingeschrieben werden nur normalisierte Notebooks unter
+  `<praktikum-id>/<notebook>.ipynb`; `.env`, Tests und Material können so nicht
+  versehentlich ins Repo gelangen.
+- **Inhalt:** Notebook ohne Ausgaben, Ausführungszähler, Zeitmessungen und
+  Widget-Zustand. Tags und Aufgabentext bleiben, die Datei bleibt ein gültiges
+  Notebook.
+- **Auslöser:** Ausgangsstand beim Laden, alle 5 Minuten (einstellbar) nur bei
+  Änderungen, jeder Testlauf und jede Abgabe auch ohne Änderung (Ergebnis als
+  Trailer `Tests: x/y`). Abgaben erhalten zusätzlich ein annotiertes Tag
+  `abgabe/<id>/<Zeitstempel>`. Ein Autosave speichert ein ungespeichertes
+  Notebook vorher, wie es der Testlauf bereits tut.
+- **Mehrere Geräte:** Vor jedem Push `fetch` und, falls nötig, ein Merge von
+  `origin/main`, nie Force-Push. Ursprünglich war `pull --rebase` geplant; ein
+  Rebase schreibt aber lokale Commits samt Abgabe-Tags um, die dann ins Leere
+  zeigen. Der Merge lässt jeden Snapshot unverändert und macht parallele Arbeit
+  auf zwei Geräten im Verlauf sichtbar. Konflikte löst der lokale Snapshot
+  (`-X ours`), denn jeder Commit enthält den vollständigen Dateistand; der
+  fremde Stand bleibt in der Historie. Ein neues Gerät übernimmt zuerst die
+  vorhandene Historie.
+- **Robustheit:** Commits entstehen immer lokal; schlägt der Push fehl (offline,
+  Token fehlt/abgelaufen), wird beim nächsten Anlass erneut gepusht. Autosave
+  blockiert weder Bearbeiten noch Testen oder Abgeben. Commit- und Tag-Zeiten
+  stammen vom Client; GitLab protokolliert Pushes zusätzlich mit Serverzeit.
+
+**Offen:** OAuth statt PAT für den Kursbetrieb, zentrale Repo-Anlage,
+Auswertung im Admin-Panel, Datenschutz-Information der Studierenden und
+Löschfristen. Unter Windows ungetestet.
+
+**Nachtrag 2026-11-04 — Verlauf und Wiederherstellen (ROADMAP Punkt 7):**
+- Eigene Seitenleiste „Autosave-Verlauf“ statt der VS-Code-Zeitachse: Deren
+  Schnittstelle für eigene Einträge ist für Extensions nicht freigegeben, und
+  das Autosave-Repo liegt bewusst außerhalb des Workspace. Frühere Stände
+  öffnet ein schreibgeschütztes Dateisystem (`notebook-grader-autosave:`), weil
+  Notebooks nur so im Notebook-Diff erscheinen.
+- Wiederherstellen ersetzt das Notebook in `work/<id>/` nur nach Bestätigung und
+  nur, wenn der aktuelle Stand vorher erfolgreich gesichert wurde. Es entsteht
+  ein eigener Commit mit Trailer `Wiederhergestellt: <sha>`, damit im Verlauf
+  sichtbar bleibt, dass Code übernommen und nicht getippt wurde.
+- Beim ersten Laden eines Praktikums auf einem Gerät bietet die Extension den
+  neuesten GitLab-Stand an, bevor das Notebook öffnet. So entsteht kein
+  Rückschritt auf das leere Aufgaben-Notebook im Verlauf. Beim Start und über
+  „Aktualisieren“ holt die Extension Stände anderer Geräte (ohne Push), ändert
+  dabei aber nie den Arbeitsstand.
+- Ausgaben werden nicht gesichert und sind nach dem Wiederherstellen weg; die
+  Zellen müssen neu ausgeführt werden.
+
+---
+
 ## 2026-10-09 — Praktika 1–4 und 6 als Pakete; conftest für Variablen-, Plot- und Dateiaufgaben
 
 **Kontext:** Die Aufgabenversionen der Praktika 1, 2, 3, 4 und 6 sollen im Tool

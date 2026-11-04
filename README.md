@@ -135,11 +135,11 @@ Das Aufgaben-Notebook im verteilten Paket enthält nur Aufgabenstellung, Setup u
 
 ## KI-Tutor
 
-Der Tutor soll gezielt helfen, aber keine fertigen Lösungen liefern. Die sokratische Systemanweisung wird serverseitig erzwungen. Für `/hint` wählt die Extension anhand der `task`-/`part`-Tags nur die benötigten studentischen Codeanteile aus (siehe `WORKFLOW.md`). Datenschutz und zulässige Speicherung von KI-Metadaten müssen vor Produktivbetrieb abschließend geklärt werden.
+Der Tutor soll gezielt helfen, aber keine fertigen Lösungen liefern. Ist das Vorlesungsskript konfiguriert (`SCRIPT_PDF`), bezieht er passende Abschnitte per Volltextsuche (SQLite FTS5) ein und verweist mit Kapitel und Seite darauf; die Seitenleiste zeigt die Stellen unter dem Tipp, ein Klick öffnet das Skript an dieser Stelle (`backend/README.md`, `extension/README.md`). Die sokratische Systemanweisung wird serverseitig erzwungen. Für `/hint` wählt die Extension anhand der `task`-/`part`-Tags nur die benötigten studentischen Codeanteile aus (siehe `WORKFLOW.md`). Datenschutz und zulässige Speicherung von KI-Metadaten müssen vor Produktivbetrieb abschließend geklärt werden.
 
 ## GitLab / Abgabe
 
-Geplant ist ein lokales Git-Repository pro Praktikumsbearbeitung mit regelmäßigen Auto-Commits. Eine verbindliche Abgabe erfolgt später explizit per Push auf ein konfiguriertes GitLab-Ziel. Tool-Quellcode und studentische Abgabe-Repositories bleiben strikt getrennt. Details werden in den entsprechenden GitHub-Issues umgesetzt.
+Der Autosave (Prototyp) sichert den Arbeitsstand regelmäßig sowie bei Laden, Testlauf und Abgabe per System-Git in ein privates GitLab-Repo des Studenten; Anmeldung über ein Personal Access Token im SecretStorage von VS Code. Der Verlauf dient der Datensicherung und als Gesprächsgrundlage, nicht der Bewertung. Einrichtung und Verhalten: `extension/README.md`, Entscheidungen: `DECISIONS.md` (2026-11-04). Die verbindliche Abgabe läuft weiterhin über das Backend. Tool-Quellcode und studentische Repositories bleiben strikt getrennt.
 
 ## Frühere Architektur
 

@@ -22,7 +22,17 @@ export interface HintUsage {
   recorded?: boolean;
 }
 
-export interface HintResponse { hint: string; usage?: HintUsage }
+/** Passende Stelle im Vorlesungsskript zu einem Tipp. */
+export interface ScriptSource {
+  title: string;
+  pages: string;
+  excerpt: string;
+  /** 1-basierte PDF-Seite und Überschrift, um das Skript dort zu öffnen (fehlen bei älteren Backends). */
+  pdf_page?: number;
+  heading?: string;
+}
+
+export interface HintResponse { hint: string; usage?: HintUsage; sources: ScriptSource[] }
 
 export interface HintPayload {
   praktikum: string;
@@ -55,7 +65,41 @@ export async function postHint(
   if (typeof response.hint !== "string") {
     throw new Error("Das Backend hat keinen Tipp zurückgegeben.");
   }
-  return {hint: response.hint, usage: response.usage as HintUsage | undefined};
+  return {hint: response.hint, usage: response.usage as HintUsage | undefined, sources: scriptSources(response.sources)};
+}
+
+/** Nur vollständige Quellenangaben übernehmen; ältere Backends liefern gar keine. */
+export function scriptSources(value: unknown): ScriptSource[] {
+  if (!Array.isArray(value)) { return []; }
+  return value.filter((item): item is ScriptSource => !!item && typeof item === "object"
+    && ["title", "pages", "excerpt"].every(key => typeof (item as Record<string, unknown>)[key] === "string"))
+    .map(item => ({
+      title: item.title, pages: item.pages, excerpt: item.excerpt,
+      ...(Number.isInteger(item.pdf_page) && (item.pdf_page as number) > 0 ? { pdf_page: item.pdf_page } : {}),
+      ...(typeof item.heading === "string" ? { heading: item.heading } : {}),
+    }));
+}
+
+/** Ergebnis von GET /script: neue Datei oder "unverändert" (ETag passt). */
+export type ScriptDownload = { unchanged: true } | { unchanged: false; bytes: Uint8Array; etag: string };
+
+/** Lädt das Vorlesungsskript von GET {backendUrl}/script; mit ETag nur, wenn es sich geändert hat. */
+export async function getScript(backendUrl: string, courseToken: string, etag?: string): Promise<ScriptDownload> {
+  let response: Response;
+  try {
+    response = await fetch(`${backendUrl}/script`, {
+      headers: { Authorization: `Bearer ${courseToken}`, ...(etag ? { "If-None-Match": etag } : {}) },
+      signal: AbortSignal.timeout(70000),
+    });
+  } catch {
+    throw new Error("Das Backend ist nicht erreichbar, das Skript kann nicht geladen werden.");
+  }
+  if (response.status === 304) { return { unchanged: true }; }
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({})) as { detail?: unknown };
+    throw new Error(typeof error.detail === "string" ? error.detail : `Das Backend hat mit Status ${response.status} geantwortet.`);
+  }
+  return { unchanged: false, bytes: new Uint8Array(await response.arrayBuffer()), etag: response.headers.get("etag") ?? "" };
 }
 
 async function postJson(
