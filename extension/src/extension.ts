@@ -14,9 +14,10 @@ import { notebookFile } from "./taskSource";
 import { state } from "./state";
 import { output } from "./output";
 import { Autosave } from "./autosave/autosave";
+import { openScript } from "./script/scriptViewer";
 
 export function activate(context: vscode.ExtensionContext): void {
-  const sidebar = new ScoreViewProvider();
+  const sidebar = new ScoreViewProvider(source => void openScript(context, source));
   const statusBarItem = createStatusBarItem();
   Autosave.register(context);
 

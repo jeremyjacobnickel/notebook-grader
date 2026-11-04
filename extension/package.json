@@ -213,5 +213,8 @@
     "typescript": "^5.5.0",
     "typescript-eslint": "^8.0.0"
   },
-  "publisher": "fh-muenster"
+  "publisher": "fh-muenster",
+  "dependencies": {
+    "pdfjs-dist": "^6.5.438"
+  }
 }

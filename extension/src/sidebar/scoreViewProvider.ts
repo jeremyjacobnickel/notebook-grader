@@ -19,10 +19,14 @@ export class ScoreViewProvider implements vscode.WebviewViewProvider {
   private sources: ScriptSource[] = [];
   private message = "Praktikum laden oder eine vorhandene Praktikums-Datei öffnen.";
 
+  constructor(private readonly openSource: (source: ScriptSource) => void) {}
+
   resolveWebviewView(view: vscode.WebviewView): void {
     this.view = view;
     view.webview.options = {enableScripts: true};
-    view.webview.onDidReceiveMessage((message: {command?: string}) => {
+    view.webview.onDidReceiveMessage((message: {command?: string; source?: number}) => {
+      const source = message.command === "openScript" ? this.sources[message.source ?? -1] : undefined;
+      if (source) { this.openSource(source); return; }
       if (["loadPraktikum", "runTests", "testSubtask", "hint", "submit", "showAssignment", "showOutput"].includes(message.command || "")) {
         vscode.commands.executeCommand(`notebookGrader.${message.command}`);
       }
@@ -56,7 +60,8 @@ export class ScoreViewProvider implements vscode.WebviewViewProvider {
       .score{font-size:20px;font-weight:600}.pass{color:var(--vscode-testing-iconPassed)}.fail{color:var(--vscode-testing-iconFailed)}
       button{cursor:pointer;border:0;padding:8px 10px;margin:3px 2px 3px 0;background:var(--vscode-button-background);color:var(--vscode-button-foreground);border-radius:3px}
       button:disabled{opacity:.5;cursor:default}button:hover{background:var(--vscode-button-hoverBackground)}
-      ul{list-style:none;padding:0;font-size:12px}li{margin:6px 0}.hint{white-space:pre-wrap;line-height:1.5;padding:12px;border-left:3px solid var(--vscode-focusBorder);background:var(--vscode-textBlockQuote-background)}
+      ul{list-style:none;padding:0;font-size:12px}li{margin:6px 0}a{color:var(--vscode-textLink-foreground);cursor:pointer}a:hover{color:var(--vscode-textLink-activeForeground)}
+      .hint{white-space:pre-wrap;line-height:1.5;padding:12px;border-left:3px solid var(--vscode-focusBorder);background:var(--vscode-textBlockQuote-background)}
       </style></head><body><h2>Praktikumsbegleiter</h2><div class="muted">Lokal testen · Mit FH-LiteLLM lernen</div>
       <p><button data-command="loadPraktikum">Praktikum laden</button><button data-command="showAssignment">Aufgaben öffnen</button></p>
       ${score}<button data-command="runTests">Alle Tests ausführen</button><button data-command="testSubtask">Teilaufgabe prüfen</button><button data-command="showOutput">Testdetails</button>
@@ -65,14 +70,18 @@ export class ScoreViewProvider implements vscode.WebviewViewProvider {
       <p><button data-command="hint">KI-Tipp holen</button><button data-command="submit" ${result && !this.subtask ? "" : "disabled"}>Ergebnis abgeben</button></p>
       <p class="muted">Für einen Tipp gehen nur Setup-Code und deine Antwortzellen der gewählten Aufgabe (bis zur gewählten Teilaufgabe), zugeordnete Testfehler und deine Frage über das Backend an FH-LiteLLM.</p>
       ${this.hint ? `<h3>Dein nächster Schritt</h3><div class="hint">${escape(this.hint)}</div>${sourcesHtml(this.sources)}<details><summary>KI-Verbrauch</summary><p class="hint muted">${escape(usageText(this.usage))}</p></details>` : ""}
-      <script nonce="${nonce}">const api=acquireVsCodeApi();document.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>api.postMessage({command:b.dataset.command})));</script></body></html>`;
+      <script nonce="${nonce}">const api=acquireVsCodeApi();document.querySelectorAll('button').forEach(b=>b.addEventListener('click',()=>api.postMessage({command:b.dataset.command})));
+      document.querySelectorAll('a[data-source]').forEach(a=>a.addEventListener('click',e=>{e.preventDefault();api.postMessage({command:'openScript',source:Number(a.dataset.source)});}));</script></body></html>`;
   }
 }
-/** Skriptstellen unter dem Tipp: Kapitel, Seiten und kurzer Anfang zum Wiedererkennen. */
+/** Skriptstellen unter dem Tipp: Kapitel, Seiten und kurzer Anfang; ein Klick öffnet das Skript an dieser Stelle. */
 function sourcesHtml(sources: ScriptSource[]): string {
   if (!sources.length) { return ""; }
-  const items = sources.map(source =>
-    `<li><strong>${escape(source.title)}</strong>, S. ${escape(source.pages)}<br><span class="muted">${escape(source.excerpt)}</span></li>`);
+  const items = sources.map((source, index) => {
+    const title = `<strong>${escape(source.title)}</strong>, S. ${escape(source.pages)}`;
+    const link = source.pdf_page ? `<a href="#" data-source="${index}" title="Skript an dieser Stelle öffnen">${title}</a>` : title;
+    return `<li>${link}<br><span class="muted">${escape(source.excerpt)}</span></li>`;
+  });
   return `<h3>Im Skript nachlesen</h3><ul>${items.join("")}</ul>`;
 }
 

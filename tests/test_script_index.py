@@ -104,3 +104,21 @@ def test_hint_includes_script_passages_and_returns_sources(monkeypatch, tmp_path
                                   "pdf_page": 2, "heading": "1.1 Gitter"}]
     assert result["usage"]["context_characters"]["script_sent"] > 0
 
+
+def test_script_endpoint_serves_the_indexed_pdf_with_etag(monkeypatch, tmp_path):
+    from fastapi.testclient import TestClient
+    app = importlib.import_module("backend.app")
+    pdf = tmp_path / "skript.pdf"
+    pdf.write_bytes(b"%PDF-1.7 Skript")
+    config = {"COURSE_TOKEN": "t", "SCRIPT_PDF": str(pdf)}
+    monkeypatch.setattr(app, "settings", lambda: config)
+    client, auth = TestClient(app.app), {"Authorization": "Bearer t"}
+
+    assert client.get("/script").status_code == 401
+    response = client.get("/script", headers=auth)
+    assert response.status_code == 200 and response.content == b"%PDF-1.7 Skript"
+    assert response.headers["content-type"] == "application/pdf"
+    etag = response.headers["etag"]
+    assert client.get("/script", headers={**auth, "If-None-Match": etag}).status_code == 304
+    config.pop("SCRIPT_PDF")
+    assert client.get("/script", headers=auth).status_code == 404

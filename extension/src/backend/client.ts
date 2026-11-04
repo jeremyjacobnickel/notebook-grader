@@ -80,6 +80,28 @@ export function scriptSources(value: unknown): ScriptSource[] {
     }));
 }
 
+/** Ergebnis von GET /script: neue Datei oder "unverändert" (ETag passt). */
+export type ScriptDownload = { unchanged: true } | { unchanged: false; bytes: Uint8Array; etag: string };
+
+/** Lädt das Vorlesungsskript von GET {backendUrl}/script; mit ETag nur, wenn es sich geändert hat. */
+export async function getScript(backendUrl: string, courseToken: string, etag?: string): Promise<ScriptDownload> {
+  let response: Response;
+  try {
+    response = await fetch(`${backendUrl}/script`, {
+      headers: { Authorization: `Bearer ${courseToken}`, ...(etag ? { "If-None-Match": etag } : {}) },
+      signal: AbortSignal.timeout(70000),
+    });
+  } catch {
+    throw new Error("Das Backend ist nicht erreichbar, das Skript kann nicht geladen werden.");
+  }
+  if (response.status === 304) { return { unchanged: true }; }
+  if (!response.ok) {
+    const error = await response.json().catch(() => ({})) as { detail?: unknown };
+    throw new Error(typeof error.detail === "string" ? error.detail : `Das Backend hat mit Status ${response.status} geantwortet.`);
+  }
+  return { unchanged: false, bytes: new Uint8Array(await response.arrayBuffer()), etag: response.headers.get("etag") ?? "" };
+}
+
 async function postJson(
   url: string,
   courseToken: string,

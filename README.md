@@ -135,7 +135,7 @@ Das Aufgaben-Notebook im verteilten Paket enthält nur Aufgabenstellung, Setup u
 
 ## KI-Tutor
 
-Der Tutor soll gezielt helfen, aber keine fertigen Lösungen liefern. Ist das Vorlesungsskript konfiguriert (`SCRIPT_PDF`), bezieht er passende Abschnitte per Volltextsuche (SQLite FTS5) ein und verweist mit Kapitel und Seite darauf; die Seitenleiste zeigt die Stellen unter dem Tipp (`backend/README.md`). Die sokratische Systemanweisung wird serverseitig erzwungen. Für `/hint` wählt die Extension anhand der `task`-/`part`-Tags nur die benötigten studentischen Codeanteile aus (siehe `WORKFLOW.md`). Datenschutz und zulässige Speicherung von KI-Metadaten müssen vor Produktivbetrieb abschließend geklärt werden.
+Der Tutor soll gezielt helfen, aber keine fertigen Lösungen liefern. Ist das Vorlesungsskript konfiguriert (`SCRIPT_PDF`), bezieht er passende Abschnitte per Volltextsuche (SQLite FTS5) ein und verweist mit Kapitel und Seite darauf; die Seitenleiste zeigt die Stellen unter dem Tipp, ein Klick öffnet das Skript an dieser Stelle (`backend/README.md`, `extension/README.md`). Die sokratische Systemanweisung wird serverseitig erzwungen. Für `/hint` wählt die Extension anhand der `task`-/`part`-Tags nur die benötigten studentischen Codeanteile aus (siehe `WORKFLOW.md`). Datenschutz und zulässige Speicherung von KI-Metadaten müssen vor Produktivbetrieb abschließend geklärt werden.
 
 ## GitLab / Abgabe
 

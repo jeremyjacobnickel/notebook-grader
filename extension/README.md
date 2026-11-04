@@ -174,3 +174,7 @@ Die Antwort enthält `hint`, `usage` und `sources` (passende Stellen im
 Vorlesungsskript mit `title`, `pages`, `excerpt`, `pdf_page`, `heading`). Die
 Seitenleiste zeigt sie unter dem Tipp als „Im Skript nachlesen“; unvollständige
 Einträge werden verworfen, ältere Backends ohne `sources` funktionieren weiter.
+Ein Klick auf eine Stelle öffnet das ganze Skript im Panel „Vorlesungsskript“
+(pdf.js, `src/script/scriptViewer.ts`, `media/scriptViewer.mjs`) auf der Seite
+`pdf_page` und markiert `heading`. Das PDF kommt von `GET /script` und wird im
+`globalStorage` zwischengespeichert (nur bei geänderter ETag neu geladen).

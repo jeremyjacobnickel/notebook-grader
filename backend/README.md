@@ -56,7 +56,9 @@ Fehlerausgabe, Code und Aufgabenstellung; höchstens drei Abschnitte mit
 zusammen ≤ 6000 Zeichen gehen mit Kapitel und Seite an FH-LiteLLM. Die Antwort
 enthält sie als `sources` (Titel der letzten zwei Gliederungsebenen, Seiten,
 die ersten 200 Zeichen, `pdf_page` = 1-basierte PDF-Seite des Abschnitts,
-`heading` = Überschrift). Ohne `SCRIPT_PDF` oder bei Lesefehlern ist `sources`
+`heading` = Überschrift). `GET /script` liefert das PDF selbst (Kurs-Token,
+`ETag` aus SHA-256, `304` bei `If-None-Match`, `404` ohne `SCRIPT_PDF`), damit
+die Extension es an der Fundstelle öffnen kann. Ohne `SCRIPT_PDF` oder bei Lesefehlern ist `sources`
 leer und der Tipp entsteht wie bisher. `usage.context_characters.script_sent`
 zeigt, wie viel Skripttext mitging.
 

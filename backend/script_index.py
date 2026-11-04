@@ -143,6 +143,14 @@ def script_passages(config, *texts):
         return []
 
 
+def script_file(config):
+    """Pfad und SHA-256 des konfigurierten Skripts oder None."""
+    pdf = config.get("SCRIPT_PDF", "")
+    if not pdf or not Path(pdf).is_file():
+        return None
+    return Path(pdf), hashlib.sha256(Path(pdf).read_bytes()).hexdigest()
+
+
 def excerpt(passage):
     """Kurzer Anfang des Abschnitts für die Quellenangabe in der Seitenleiste."""
     text = " ".join(passage.text.split())

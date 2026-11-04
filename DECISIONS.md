@@ -5,6 +5,32 @@ Neue Einträge oben anfügen, Datum im Format YYYY-MM-DD.
 
 ---
 
+## 2026-11-04 — Skriptstellen im eingebetteten PDF-Viewer öffnen
+
+**Kontext:** Unter einem KI-Tipp stehen die passenden Skriptstellen. Ein kurzer
+Auszug reicht zum Nachlesen nicht; ein Klick soll das Skript genau an dieser
+Stelle öffnen.
+
+**Entscheidung:**
+- **Das Backend liefert das PDF** (`GET /script`, Kurs-Token, ETag/304). So
+  passen die Seiten immer zum Index, aus dem die Fundstellen stammen. Die
+  Extension speichert die Kopie im `globalStorage` und lädt sie nur neu, wenn
+  sich das PDF geändert hat; ohne Verbindung wird die vorhandene Kopie genutzt.
+- **pdf.js in einem Webview-Panel** neben dem Notebook statt eines externen
+  Viewers. Externe Viewer (Vorschau, Browser) können nicht verlässlich auf eine
+  Seite springen und die Überschrift markieren; pdf.js kann beides
+  (`currentPageNumber`, Suche mit `highlightAll`). `sources` enthalten dafür
+  zusätzlich `pdf_page` (1-basierte PDF-Seite) und `heading`.
+- **Neue Abhängigkeit `pdfjs-dist` (≥ 6.5):** Ältere Versionen haben eine
+  Sicherheitslücke (Ausführung von JavaScript über präparierte PDFs). Zusätzlich
+  `isEvalSupported: false`, XFA aus, strenge CSP. Der Worker wird über eine
+  `blob:`-URL gestartet, weil Webviews Worker von Ressourcen-URLs blockieren.
+
+**Offen:** Darf das Skript an Studierende verteilt werden (Erlaubnis des
+Professors)? Paketgröße der Extension wächst um pdf.js (~ einige MB).
+
+---
+
 ## 2026-11-04 — KI-Tipps mit Auszügen aus dem Vorlesungsskript (Volltextsuche)
 
 **Kontext:** Tipps sollen auf die passende Stelle im Vorlesungsskript (ein
