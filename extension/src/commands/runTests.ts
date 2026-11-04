@@ -8,6 +8,7 @@ import { output } from "../output";
 import { ScoreViewProvider } from "../sidebar/scoreViewProvider";
 import { updateStatusBarItem } from "../statusBar";
 import { state } from "../state";
+import { recordSnapshot } from "../autosave/autosave";
 
 export async function runTests(sidebar: ScoreViewProvider, statusBar: vscode.StatusBarItem, subtask?: string): Promise<void> {
   if (state.busy) { return; }
@@ -40,6 +41,7 @@ export async function runTests(sidebar: ScoreViewProvider, statusBar: vscode.Sta
     state.lastTraceback = result.passed === result.total ? "" : run.output.slice(-16000);
     sidebar.showResult(result, run.testcases, tasks, subtask);
     if (!subtask) { updateStatusBarItem(statusBar, result); }
+    recordSnapshot({ reason: "tests", subtask, tests: { passed: result.passed, total: result.total } });
   } catch (error) {
     state.lastTraceback = (error as Error).message.slice(-16000);
     if (source !== undefined && source === await currentCode().catch(() => undefined)) {

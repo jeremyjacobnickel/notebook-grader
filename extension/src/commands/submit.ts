@@ -5,6 +5,7 @@ import { postSubmit } from "../backend/client";
 import { getConfig } from "../config";
 import { state } from "../state";
 import { currentCode } from "../currentTask";
+import { recordSnapshot } from "../autosave/autosave";
 
 export async function submit(): Promise<void> {
   if (state.busy) { return; }
@@ -43,6 +44,7 @@ export async function submit(): Promise<void> {
     return;
   }
 
+  recordSnapshot({ reason: "submit", tests: { passed: result.passed, total: result.total } });
   vscode.window.showInformationMessage(
     result.isPass
       ? `Abgabe übermittelt: ${state.praktikumId} bestanden ` +

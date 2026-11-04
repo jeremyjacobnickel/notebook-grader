@@ -5,6 +5,7 @@ import * as fs from "fs/promises";
 import * as vscode from "vscode";
 import { state } from "../state";
 import { extractPackage, notebookFile, readManifest } from "../taskSource";
+import { offerRemoteState, recordSnapshot } from "../autosave/autosave";
 
 export async function loadPraktikum(): Promise<void> {
   if (state.busy) { return; }
@@ -54,9 +55,14 @@ export async function loadPraktikum(): Promise<void> {
     state.lastTraceback = "";
     state.lastSource = undefined;
 
+    // Neu auf diesem Gerät: einen auf GitLab gesicherten Stand anbieten, bevor das Notebook öffnet.
+    const adopted = !exists && await offerRemoteState(targetDir);
+
     const notebook = await notebookFile(targetDir);
     const document = await vscode.workspace.openNotebookDocument(vscode.Uri.file(notebook));
     await vscode.window.showNotebookDocument(document);
+    // Neuer Import: Ausgangsstand. Vorhandener Stand: nur bei Änderungen.
+    if (!adopted) { recordSnapshot({ reason: exists ? "interval" : "load" }); }
   } catch (error) {
     await fs.rm(stagingDir, { recursive: true, force: true }).catch(() => undefined);
     vscode.window.showErrorMessage(

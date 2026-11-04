@@ -13,10 +13,12 @@ import { taskDirectory } from "./currentTask";
 import { notebookFile } from "./taskSource";
 import { state } from "./state";
 import { output } from "./output";
+import { Autosave } from "./autosave/autosave";
 
 export function activate(context: vscode.ExtensionContext): void {
   const sidebar = new ScoreViewProvider();
   const statusBarItem = createStatusBarItem();
+  Autosave.register(context);
 
   const markChanged = (): void => {
     state.lastResult = undefined; state.lastSource = undefined; state.lastTraceback = "";

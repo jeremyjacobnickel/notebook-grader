@@ -139,7 +139,7 @@ Der Tutor soll gezielt helfen, aber keine fertigen Lösungen liefern. Die sokrat
 
 ## GitLab / Abgabe
 
-Geplant ist ein lokales Git-Repository pro Praktikumsbearbeitung mit regelmäßigen Auto-Commits. Eine verbindliche Abgabe erfolgt später explizit per Push auf ein konfiguriertes GitLab-Ziel. Tool-Quellcode und studentische Abgabe-Repositories bleiben strikt getrennt. Details werden in den entsprechenden GitHub-Issues umgesetzt.
+Der Autosave (Prototyp) sichert den Arbeitsstand regelmäßig sowie bei Laden, Testlauf und Abgabe per System-Git in ein privates GitLab-Repo des Studenten; Anmeldung über ein Personal Access Token im SecretStorage von VS Code. Der Verlauf dient der Datensicherung und als Gesprächsgrundlage, nicht der Bewertung. Einrichtung und Verhalten: `extension/README.md`, Entscheidungen: `DECISIONS.md` (2026-11-04). Die verbindliche Abgabe läuft weiterhin über das Backend. Tool-Quellcode und studentische Repositories bleiben strikt getrennt.
 
 ## Frühere Architektur
 

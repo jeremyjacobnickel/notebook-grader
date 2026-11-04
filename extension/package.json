@@ -48,6 +48,49 @@
         "command": "notebookGrader.testSubtask",
         "category": "Notebook Grader",
         "title": "Teilaufgabe prüfen"
+      },
+      {
+        "command": "notebookGrader.autosaveNow",
+        "category": "Notebook Grader",
+        "title": "Jetzt sichern",
+        "icon": "$(save)"
+      },
+      {
+        "command": "notebookGrader.setGitlabToken",
+        "category": "Notebook Grader",
+        "title": "GitLab-Token eintragen"
+      },
+      {
+        "command": "notebookGrader.clearGitlabToken",
+        "category": "Notebook Grader",
+        "title": "GitLab-Token entfernen"
+      },
+      {
+        "command": "notebookGrader.autosaveRefresh",
+        "category": "Notebook Grader",
+        "title": "Autosave-Verlauf aktualisieren (auch von anderen Geräten)",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "notebookGrader.autosaveOpenSettings",
+        "category": "Notebook Grader",
+        "title": "Autosave einrichten",
+        "icon": "$(gear)"
+      },
+      {
+        "command": "notebookGrader.autosaveShowChanges",
+        "category": "Notebook Grader",
+        "title": "Änderungen dieses Schritts anzeigen"
+      },
+      {
+        "command": "notebookGrader.autosaveCompareWithCurrent",
+        "category": "Notebook Grader",
+        "title": "Mit aktuellem Stand vergleichen"
+      },
+      {
+        "command": "notebookGrader.autosaveRestore",
+        "category": "Notebook Grader",
+        "title": "Diesen Stand wiederherstellen"
       }
     ],
     "views": {
@@ -56,6 +99,10 @@
           "type": "webview",
           "id": "notebookGrader.scoreView",
           "name": "Notebook Grader"
+        },
+        {
+          "id": "notebookGrader.autosaveHistory",
+          "name": "Autosave-Verlauf"
         }
       ]
     },
@@ -76,8 +123,81 @@
           "type": "string",
           "default": "",
           "description": "Python-Interpreter für pytest, z. B. /pfad/zum/projekt/.venv/bin/python."
+        },
+        "notebookGrader.autosave.repositoryUrl": {
+          "type": "string",
+          "default": "",
+          "markdownDescription": "HTTPS-URL deines privaten GitLab-Repos für den Autosave, z. B. `https://gitlab.com/name/praktika.git`. Leer = Autosave aus. Das Token gehört nicht hierher, sondern in **Notebook Grader: GitLab-Token eintragen**."
+        },
+        "notebookGrader.autosave.intervalMinutes": {
+          "type": "number",
+          "default": 5,
+          "minimum": 1,
+          "description": "Abstand der automatischen Sicherungen in Minuten. Gesichert wird nur, wenn sich das Notebook geändert hat."
         }
       }
+    },
+    "viewsWelcome": [
+      {
+        "view": "notebookGrader.autosaveHistory",
+        "when": "!notebookGrader.autosaveConfigured",
+        "contents": "Der Autosave ist noch nicht eingerichtet.\n[Autosave einrichten](command:notebookGrader.autosaveOpenSettings)"
+      },
+      {
+        "view": "notebookGrader.autosaveHistory",
+        "when": "notebookGrader.autosaveConfigured",
+        "contents": "Für dieses Praktikum gibt es noch keine Sicherung. Lade ein Praktikum oder sichere den aktuellen Stand.\n[Jetzt sichern](command:notebookGrader.autosaveNow)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "notebookGrader.autosaveNow",
+          "when": "view == notebookGrader.autosaveHistory && notebookGrader.autosaveConfigured",
+          "group": "navigation@1"
+        },
+        {
+          "command": "notebookGrader.autosaveRefresh",
+          "when": "view == notebookGrader.autosaveHistory",
+          "group": "navigation@2"
+        },
+        {
+          "command": "notebookGrader.autosaveOpenSettings",
+          "when": "view == notebookGrader.autosaveHistory",
+          "group": "navigation@3"
+        }
+      ],
+      "view/item/context": [
+        {
+          "command": "notebookGrader.autosaveShowChanges",
+          "when": "view == notebookGrader.autosaveHistory && viewItem == snapshot",
+          "group": "1_compare@1"
+        },
+        {
+          "command": "notebookGrader.autosaveCompareWithCurrent",
+          "when": "view == notebookGrader.autosaveHistory && viewItem == snapshot",
+          "group": "1_compare@2"
+        },
+        {
+          "command": "notebookGrader.autosaveRestore",
+          "when": "view == notebookGrader.autosaveHistory && viewItem == snapshot",
+          "group": "2_restore@1"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "notebookGrader.autosaveShowChanges",
+          "when": "false"
+        },
+        {
+          "command": "notebookGrader.autosaveCompareWithCurrent",
+          "when": "false"
+        },
+        {
+          "command": "notebookGrader.autosaveRestore",
+          "when": "false"
+        }
+      ]
     }
   },
   "scripts": {
